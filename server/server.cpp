@@ -12,7 +12,7 @@
 #include "ctime"
 #include "string"
 #include "fstream"
-#include "connectDB.h"
+#include "DBConnection.h"
 
 using namespace std;
 
@@ -23,6 +23,7 @@ using namespace std;
 #define SERVER_ADDR "127.0.0.1"
 #define USER_LEN 200
 #define DELIMITER "\r\n"
+#define BUFF_QUERY 1024
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -46,19 +47,20 @@ typedef struct {
 } PER_HANDLE_DATA, *LPPER_HANDLE_DATA;
 
 CRITICAL_SECTION criticalSection;
-int threadId = 0;
 ofstream logFile;
-fstream accountFile;
+SQLHANDLE sqlConnHandle;
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
 void communicateClient(LP_Client client);
 void returnCurrentTime(string &log);
 void handleProtocol(LP_Client client, string &log);
 void writeInLogFile(string log);
-void logIn(LP_Client client, string &log, string data);
+void signUp(LP_Client client, string &log, string data);
+void signIn(LP_Client client, string &log, string data);
 void logOut(LP_Client client, string &log);
 void postMessage(LP_Client client, string &log, string data);
 void sendMessage(char *buff, SOCKET &connectedSocket);
+LPWSTR convertStringToLPWSTR(string param);
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +73,6 @@ int main(int argc, char *argv[])
 	DWORD transferredBytes;
 	DWORD flags;
 	WSADATA wsaData;
-	LPHANDLE_SQL sqlHandle;
 
 	if (WSAStartup((2, 2), &wsaData) != 0) {
 		printf("WSAStartup() failed with error %d\n", GetLastError());
@@ -117,13 +118,33 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	cout << "check" << endl;
-	// Initialize SQL server
-	ZeroMemory(&(sqlHandle), sizeof(HANDLE_SQL));
-	initializeDB(sqlHandle);
+	sqlConnHandle = NULL;
+	sqlConnHandle = connectDB();
 
-	printf("Server Started!");
+	printf("Server Started!\n");
+	//string query = "SELECT * FROM account WHERE username='quy' AND password='123'";
+	//wchar_t wquery[BUFF_QUERY];
+	//mbstowcs(wquery, query.c_str(), strlen(query.c_str()) + 1);//Plus null
+	//LPWSTR ptr = wquery;
 
+	//SQLHANDLE sqlStmtHandle = NULL;
+	//
+	//if (sqlStmtHandle = handleQuery(sqlConnHandle, ptr)) {
+	//	SQLCHAR username[SQL_RESULT_LEN];
+	//	SQLCHAR password[SQL_RESULT_LEN];
+	//	SQLINTEGER ptrSqlVersion;
+	//	while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+	//		SQLGetData(sqlStmtHandle, 2, SQL_CHAR, username, SQL_RESULT_LEN, &ptrSqlVersion);
+	//		SQLGetData(sqlStmtHandle, 3, SQL_CHAR, password, SQL_RESULT_LEN, &ptrSqlVersion);
+	//		// display query result
+	//		cout << "\nQuery Result:\n\n";
+	//		cout << username << " " << password << endl;
+	//		string str1((const char*)username);
+	//		string str2((const char*)password);
+	//		cout << str1.length() << " " << str2.length() << endl;
+	//	}
+	//}
+	
 	InitializeCriticalSection(&criticalSection);
 	while (1) {
 		sockaddr_in clientAddr;
@@ -321,6 +342,13 @@ void returnCurrentTime(string &log) {
 	log += to_string(ltm->tm_sec) + "]" + " $ "; // seconds
 }
 
+LPWSTR convertStringToLPWSTR(string param) {
+	wchar_t wquery[BUFF_QUERY];
+	mbstowcs(wquery, param.c_str(), strlen(param.c_str()) + 1);//Plus null
+	LPWSTR lquery = wquery;
+	return lquery;
+}
+
 // Split protocol and message from client, handle protocol
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
@@ -329,12 +357,12 @@ void handleProtocol(LP_Client client, string &log) {
 	string str(client->buffer);
 	// Write message to log variable
 	log += str + " $ ";
-	string key = str.substr(0, 4);
+	string key = str.substr(0, 6);
 	string data;
-	if (str.length() > 4) {
-		data = str.substr(5);
+	if (str.length() > 6) {
+		data = str.substr(7);
 	}
-	if (key == "USER") {
+	if (key == "SIGNUP") {
 		if (client->isLogin) {
 			// check login
 			log += "401";
@@ -342,23 +370,22 @@ void handleProtocol(LP_Client client, string &log) {
 			writeInLogFile(log);
 		}
 		else {
-			logIn(client, log, data);
+			signUp(client, log, data);
 		}
 	}
-	else if (key == "POST") {
-		if (!client->isLogin) {
+	else if (key == "SIGNIN") {
+		if (client->isLogin) {
 			// check login
-			log += "402";
-			strcpy(client->buffer, "402 You are not log in");
+			log += "401";
+			strcpy(client->buffer, "401 you are logged in, Please log out first!");
 			writeInLogFile(log);
 		}
 		else {
-			postMessage(client, log, data);
+			signIn(client, log, data);
 		}
-
 	}
-	else if (key == "QUIT") {
-		if (client->isLogin) {
+	else if (key == "LOGOUT") {
+		if (!client->isLogin) {
 			// check login
 			log += "402";
 			strcpy(client->buffer, "402 You are not log in");
@@ -387,63 +414,75 @@ void writeInLogFile(string log) {
 	LeaveCriticalSection(&criticalSection);
 }
 
+void signUp(LP_Client client, string &log, string data) {
+	char rs[DATA_BUFSIZE];
+	memset(rs, 0, DATA_BUFSIZE);
+	SQLHANDLE sqlStmtHandle;
+	sqlStmtHandle = NULL;
+	string strUsername = data.substr(0, data.find("\n"));
+	string strPassword = data.substr(data.find("\n") + 1);
+
+	string query = "SELECT * FROM account WHERE username='" + strUsername + "' AND password='" + strPassword + "'";
+	// convert string to L string
+	PWSTR lquery = convertStringToLPWSTR(query);
+	// handle query
+	EnterCriticalSection(&criticalSection);
+	if (sqlStmtHandle = handleQuery(sqlConnHandle, lquery)) {
+		LeaveCriticalSection(&criticalSection);
+		if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+			strcat_s(rs, "400 Account already exists!");
+			log += "400";
+			strcpy(client->buffer, rs);
+		}
+		else {
+			query = "insert into account values ('" + strUsername + "','" + strPassword + "')";
+			cout << query << endl;
+			// convert string to L string
+			lquery = convertStringToLPWSTR(query);
+			// handle query
+			EnterCriticalSection(&criticalSection);
+			sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+			LeaveCriticalSection(&criticalSection);
+			strcat_s(rs, "200 Sign up success!");
+			log += "200";
+			strcpy(client->buffer, rs);
+		}
+	}
+	
+	writeInLogFile(log);
+}
+
 // Login function handle login request from client
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void logIn(LP_Client client, string &log, string data) {
+void signIn(LP_Client client, string &log, string data) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
+	SQLHANDLE sqlStmtHandle;
+	sqlStmtHandle = NULL;
+	string strUsername = data.substr(0, data.find("\n"));
+	string strPassword = data.substr(data.find("\n")+1);
+	string query = "SELECT * FROM account WHERE username='" + strUsername + "' AND password='" + strPassword + "'";
+	// convert string to L string
+	PWSTR lquery = convertStringToLPWSTR(query);
+	// handle query
 	EnterCriticalSection(&criticalSection);
-	accountFile.open("account.txt", ios::in);
-	string line;
-	// Read file account.txt and check account status
-	while (!accountFile.eof())
-	{
-		getline(accountFile, line);
-		string username = line.substr(0, line.find(" "));
-		if (username == data) {
-			// check account status
-			string status = line.substr(line.find(" ") + 1);
-			if (status == "1") {
-				strcat_s(rs, "407 User has been locked");
-				log += "407";
-			}
-			else {
-				strcat_s(rs, "200 Login successful");
-				log += "200";
-				client->isLogin = true;
-				strcpy(client->username, username.c_str());
-			}
-			break;
+	if (sqlStmtHandle = handleQuery(sqlConnHandle, lquery)) {
+		LeaveCriticalSection(&criticalSection);
+		if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+			strcat_s(rs, "210 Sign in success!");
+			log += "210";
+			strcpy(client->buffer, rs);
+			client->isLogin = true;
+			strcpy(client->username, strUsername.c_str());
+		}
+		else {
+			strcat_s(rs, "410 Incorrect account and password !");
+			log += "410";
+			strcpy(client->buffer, rs);
 		}
 	}
-	if (strlen(rs) == 0) {
-		strcat_s(rs, "406 User does not exist!");
-		log += "406";
-	}
-
-	strcpy(client->buffer, rs);
-	// Write in log file
-	writeInLogFile(log);
-	// close file "account.txt"
-	accountFile.close();
-	LeaveCriticalSection(&criticalSection);
-}
-
-// postMessage function handle post message request
-// @param client - Pointer input data and info client
-// @param log - reference variable store the activity log 
-// @param data - message without protocol send by client
-void postMessage(LP_Client client, string &log, string data) {
-	char rs[DATA_BUFSIZE];
-	memset(rs, 0, DATA_BUFSIZE);
-
-	strcat_s(rs, "200 Post sucessful!");
-	log += "200";
-
-	strcpy(client->buffer, rs);
-	// Write in log file
 	writeInLogFile(log);
 }
 
@@ -455,8 +494,8 @@ void logOut(LP_Client client, string &log) {
 	memset(rs, 0, DATA_BUFSIZE);
 	// Handle critical resource
 
-	strcat_s(rs, "200 Logout sucessfull!");
-	log += "200";
+	strcat_s(rs, "220 Logout sucessfull!");
+	log += "220";
 	client->isLogin = false;
 	memset(client->username, 0, USER_LEN);
 

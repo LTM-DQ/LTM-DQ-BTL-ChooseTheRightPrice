@@ -84,19 +84,26 @@ void recvMessage(char *buff) {
 	}
 }
 
-// login function
-void login() {
+// signin function
+void signin() {
 	while (1) {
 		memset(buff, 0, BUFF_SIZE);
 		memset(buffIn, 0, BUFF_SIZE);
 		// Enter string
 		printf("To back to menu, please press enter!\n");
 		printf("Please enter username!\n\n");
-		printf("USER: ");
+		printf("username: ");
 		gets_s(buffIn, BUFF_SIZE);
 
 		if (strlen(buffIn) == 0) break;
-		strcat_s(buff, "USER ");
+		strcat_s(buff, "SIGNIN ");
+		strcat_s(buff, buffIn);
+
+		printf("Please enter password!\n\n");
+		printf("password: ");
+		gets_s(buffIn, BUFF_SIZE);
+
+		strcat_s(buff, "\n");
 		strcat_s(buff, buffIn);
 		strcat_s(buff, DELIMITER);
 
@@ -106,9 +113,39 @@ void login() {
 		recvMessage(buff);
 		string recvData = buff;
 		string key = recvData.substr(0, 3);
-		if (key == "200") break;
+		if (key == "210") break;
 		else if (key == "401") break;
 	}
+}
+
+// signup function
+void signup() {
+	memset(buff, 0, BUFF_SIZE);
+	memset(buffIn, 0, BUFF_SIZE);
+	// Enter string
+	printf("To back to menu, please press enter!\n");
+	printf("Please enter username!\n\n");
+	printf("username: ");
+	gets_s(buffIn, BUFF_SIZE);
+
+	if (strlen(buffIn) == 0) return;
+	strcat_s(buff, "SIGNUP ");
+	strcat_s(buff, buffIn);
+
+	printf("Please enter password!\n\n");
+	printf("password: ");
+	gets_s(buffIn, BUFF_SIZE);
+
+	strcat_s(buff, "\n");
+	strcat_s(buff, buffIn);
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+	string recvData = buff;
+	string key = recvData.substr(0, 3);
 }
 
 // Post Message function
@@ -142,7 +179,7 @@ void postMessage() {
 // Log out function
 void logOut() {
 	memset(buff, 0, BUFF_SIZE);
-	strcat_s(buff, "QUIT");
+	strcat_s(buff, "LOGOUT");
 	strcat_s(buff, DELIMITER);
 
 	// Send message
@@ -155,17 +192,17 @@ void logOut() {
 void menu() {
 	while (1) {
 		// display menu
-		printf("1. Log in\n2. Post message\n3. Logout\n4. Exit\n");
+		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
 		gets_s(choose, BUFF_SIZE);
 		switch (atoi(choose)) {
 		case 1:
-			login();
+			signin();
 			break;
 		case 2:
-			postMessage();
+			signup();
 			break;
 		case 3:
 			logOut();
