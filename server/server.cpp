@@ -422,7 +422,7 @@ void signUp(LP_Client client, string &log, string data) {
 	string strUsername = data.substr(0, data.find("\n"));
 	string strPassword = data.substr(data.find("\n") + 1);
 
-	string query = "SELECT * FROM account WHERE username='" + strUsername + "' AND password='" + strPassword + "'";
+	string query = "SELECT * FROM account WHERE username='" + strUsername + "'";
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
 	// handle query
@@ -436,7 +436,6 @@ void signUp(LP_Client client, string &log, string data) {
 		}
 		else {
 			query = "insert into account values ('" + strUsername + "','" + strPassword + "')";
-			cout << query << endl;
 			// convert string to L string
 			lquery = convertStringToLPWSTR(query);
 			// handle query
