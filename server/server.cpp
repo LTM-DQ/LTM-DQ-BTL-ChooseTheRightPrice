@@ -12,6 +12,7 @@
 #include "ctime"
 #include "string"
 #include "fstream"
+#include "DBConnection.h"
 
 using namespace std;
 
@@ -115,8 +116,29 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	printf("Server Started!");
+	SQLHANDLE sqlConnHandle = NULL;
+	sqlConnHandle = connectDB();
 
+	printf("Server Started!\n");
+	//SQLWCHAR query[] = L"SELECT * FROM account ";
+	//SQLHANDLE sqlStmtHandle = NULL;
+	
+	//if (sqlStmtHandle = handleQuery(sqlConnHandle, query)) {
+	//	SQLCHAR username[SQL_RESULT_LEN];
+	//	SQLCHAR password[SQL_RESULT_LEN];
+	//	SQLINTEGER ptrSqlVersion;
+	//	while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+	//		SQLGetData(sqlStmtHandle, 2, SQL_CHAR, username, SQL_RESULT_LEN, &ptrSqlVersion);
+	//		SQLGetData(sqlStmtHandle, 3, SQL_CHAR, password, SQL_RESULT_LEN, &ptrSqlVersion);
+	//		//display query result
+	//		cout << "\nQuery Result:\n\n";
+	//		cout << username << " " << password << endl;
+	//		string str1((const char*)username);
+	//		string str2((const char*)password);
+	//		cout << str1.length() << " " << str2.length() << endl;
+	//	}
+	//}
+	
 	InitializeCriticalSection(&criticalSection);
 	while (1) {
 		sockaddr_in clientAddr;
