@@ -12,6 +12,7 @@
 #include "ctime"
 #include "string"
 #include "fstream"
+#include "connectDB.h"
 
 using namespace std;
 
@@ -38,7 +39,7 @@ typedef struct {
 	int clientPort;
 	char username[USER_LEN];
 	bool isLogin;
-} PER_IO_OPERATION_DATA, *LPPER_IO_OPERATION_DATA;
+} Client, *LP_Client;
 
 typedef struct {
 	SOCKET socket;
@@ -50,13 +51,13 @@ ofstream logFile;
 fstream accountFile;
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
-void communicateClient(LPPER_IO_OPERATION_DATA perIoData);
+void communicateClient(LP_Client client);
 void returnCurrentTime(string &log);
-void handleProtocol(LPPER_IO_OPERATION_DATA perIoData, string &log);
+void handleProtocol(LP_Client client, string &log);
 void writeInLogFile(string log);
-void logIn(LPPER_IO_OPERATION_DATA perIoData, string &log, string data);
-void logOut(LPPER_IO_OPERATION_DATA perIoData, string &log);
-void postMessage(LPPER_IO_OPERATION_DATA perIoData, string &log, string data);
+void logIn(LP_Client client, string &log, string data);
+void logOut(LP_Client client, string &log);
+void postMessage(LP_Client client, string &log, string data);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 
 int main(int argc, char *argv[])
@@ -66,26 +67,27 @@ int main(int argc, char *argv[])
 	HANDLE completionPort;
 	SYSTEM_INFO systemInfo;
 	LPPER_HANDLE_DATA perHandleData;
-	LPPER_IO_OPERATION_DATA perIoData;
+	LP_Client client;
 	DWORD transferredBytes;
 	DWORD flags;
 	WSADATA wsaData;
+	LPHANDLE_SQL sqlHandle;
 
 	if (WSAStartup((2, 2), &wsaData) != 0) {
 		printf("WSAStartup() failed with error %d\n", GetLastError());
 		return 1;
 	}
 
-	// Step 1: Setup an I/O completion port
+	// Setup an I/O completion port
 	if ((completionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL) {
 		printf("CreateIoCompletionPort() failed with error %d\n", GetLastError());
 		return 1;
 	}
 
-	// Step 2: Determine how many processors are on the system
+	// Determine how many processors are on the system
 	GetSystemInfo(&systemInfo);
 
-	// Step 3: Create worker threads based on the number of processors available on the
+	// Create worker threads based on the number of processors available on the
 	// system. Create two worker threads for each processor	
 	for (int i = 0; i < (int)systemInfo.dwNumberOfProcessors * 2; i++) {
 		// Create a server worker thread and pass the completion port to the thread
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// Step 4: Create a listening socket
+	// Create a listening socket
 	if ((listenSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
 		printf("WSASocket() failed with error %d\n", WSAGetLastError());
 		return 1;
@@ -114,6 +116,11 @@ int main(int argc, char *argv[])
 		printf("listen() failed with error %d\n", WSAGetLastError());
 		return 1;
 	}
+
+	cout << "check" << endl;
+	// Initialize SQL server
+	ZeroMemory(&(sqlHandle), sizeof(HANDLE_SQL));
+	initializeDB(sqlHandle);
 
 	printf("Server Started!");
 
@@ -143,23 +150,23 @@ int main(int argc, char *argv[])
 		}
 
 		// Step 8: Create per I/O socket information structure to associate with the WSARecv call
-		if ((perIoData = (LPPER_IO_OPERATION_DATA)GlobalAlloc(GPTR, sizeof(PER_IO_OPERATION_DATA))) == NULL) {
+		if ((client = (LP_Client)GlobalAlloc(GPTR, sizeof(Client))) == NULL) {
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
 
-		ZeroMemory(&(perIoData->overlapped), sizeof(OVERLAPPED));
-		perIoData->sentBytes = 0;
-		perIoData->recvBytes = 0;
-		perIoData->dataBuff.len = DATA_BUFSIZE;
-		perIoData->dataBuff.buf = perIoData->buffer;
-		perIoData->operation = RECEIVE;
+		ZeroMemory(&(client->overlapped), sizeof(OVERLAPPED));
+		client->sentBytes = 0;
+		client->recvBytes = 0;
+		client->dataBuff.len = DATA_BUFSIZE;
+		client->dataBuff.buf = client->buffer;
+		client->operation = RECEIVE;
 		flags = 0;
-		inet_ntop(AF_INET, &clientAddr.sin_addr, perIoData->clientIP, sizeof(perIoData->clientIP));
-		perIoData->clientPort = ntohs(clientAddr.sin_port);
-		perIoData->isLogin = false;
+		inet_ntop(AF_INET, &clientAddr.sin_addr, client->clientIP, sizeof(client->clientIP));
+		client->clientPort = ntohs(clientAddr.sin_port);
+		client->isLogin = false;
 
-		if (WSARecv(acceptSock, &(perIoData->dataBuff), 1, &transferredBytes, &flags, &(perIoData->overlapped), NULL) == SOCKET_ERROR) {
+		if (WSARecv(acceptSock, &(client->dataBuff), 1, &transferredBytes, &flags, &(client->overlapped), NULL) == SOCKET_ERROR) {
 			if (WSAGetLastError() != ERROR_IO_PENDING) {
 				printf("WSARecv() failed with error %d\n", WSAGetLastError());
 				return 1;
@@ -176,14 +183,14 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 	HANDLE completionPort = (HANDLE)completionPortID;
 	DWORD transferredBytes;
 	LPPER_HANDLE_DATA perHandleData;
-	LPPER_IO_OPERATION_DATA perIoData;
+	LP_Client client;
 	DWORD flags;
 
 	char queue[DATA_BUFSIZE];
 
 	while (TRUE) {
 		if (GetQueuedCompletionStatus(completionPort, &transferredBytes,
-			(LPDWORD)&perHandleData, (LPOVERLAPPED *)&perIoData, INFINITE) == 0) {
+			(LPDWORD)&perHandleData, (LPOVERLAPPED *)&client, INFINITE) == 0) {
 			printf("GetQueuedCompletionStatus() failed with error %d\n", GetLastError());
 			return 0;
 		}
@@ -197,33 +204,33 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 				return 0;
 			}
 			GlobalFree(perHandleData);
-			GlobalFree(perIoData);
+			GlobalFree(client);
 			continue;
 		}
 		// Check to see if the operation field equals RECEIVE. If this is so, then
 		// this means a WSARecv call just completed so update the recvBytes field
 		// with the transferredBytes value from the completed WSARecv() call
-		if (perIoData->operation == RECEIVE) {
+		if (client->operation == RECEIVE) {
 			char rs[DATA_BUFSIZE];
 			ZeroMemory(&rs, sizeof(DATA_BUFSIZE));
-			strcpy(queue, perIoData->buffer);
+			strcpy(queue, client->buffer);
 			// Handle byte stream
 			while (strstr(queue, DELIMITER) != NULL)
 			{
 				string strQueue = string(queue);
 				string data = strQueue.substr(0, strQueue.find(DELIMITER));
-				strcpy(perIoData->buffer, data.c_str());
-				communicateClient(perIoData);
+				strcpy(client->buffer, data.c_str());
+				communicateClient(client);
 				strcpy(queue, strstr(queue, DELIMITER) + strlen(DELIMITER));
 				if (strlen(queue) != 0) {
-					perIoData->dataBuff.buf = perIoData->buffer;
-					perIoData->dataBuff.len = strlen(perIoData->buffer);
+					client->dataBuff.buf = client->buffer;
+					client->dataBuff.len = strlen(client->buffer);
 					if (WSARecv(perHandleData->socket,
-						&(perIoData->dataBuff),
+						&(client->dataBuff),
 						1,
 						&transferredBytes,
 						&flags,
-						&(perIoData->overlapped), NULL) == SOCKET_ERROR) {
+						&(client->overlapped), NULL) == SOCKET_ERROR) {
 						if (WSAGetLastError() != ERROR_IO_PENDING) {
 							printf("WSARecv() failed with error %d\n", WSAGetLastError());
 							return 0;
@@ -231,32 +238,32 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 					}
 				}
 				else {
-					strcat(rs, perIoData->buffer);
+					strcat(rs, client->buffer);
 				}
 			}
-			strcpy(perIoData->buffer, rs);
-			perIoData->recvBytes = strlen(perIoData->buffer);
-			perIoData->sentBytes = 0;
-			perIoData->operation = SEND;
+			strcpy(client->buffer, rs);
+			client->recvBytes = strlen(client->buffer);
+			client->sentBytes = 0;
+			client->operation = SEND;
 		}
-		else if (perIoData->operation == SEND) {
-			perIoData->sentBytes += transferredBytes;
+		else if (client->operation == SEND) {
+			client->sentBytes += transferredBytes;
 		}
 
-		if (perIoData->recvBytes > perIoData->sentBytes) {
+		if (client->recvBytes > client->sentBytes) {
 			// Post another WSASend() request.
 			// Since WSASend() is not guaranteed to send all of the bytes requested,
 			// continue posting WSASend() calls until all received bytes are sent.
-			ZeroMemory(&(perIoData->overlapped), sizeof(OVERLAPPED));
-			perIoData->dataBuff.buf = perIoData->buffer + perIoData->sentBytes;
-			perIoData->dataBuff.len = perIoData->recvBytes - perIoData->sentBytes;
-			perIoData->operation = SEND;
+			ZeroMemory(&(client->overlapped), sizeof(OVERLAPPED));
+			client->dataBuff.buf = client->buffer + client->sentBytes;
+			client->dataBuff.len = client->recvBytes - client->sentBytes;
+			client->operation = SEND;
 			if (WSASend(perHandleData->socket,
-				&(perIoData->dataBuff),
+				&(client->dataBuff),
 				1,
 				&transferredBytes,
 				0,
-				&(perIoData->overlapped),
+				&(client->overlapped),
 				NULL) == SOCKET_ERROR) {
 				if (WSAGetLastError() != ERROR_IO_PENDING) {
 					printf("WSASend() failed with error %d\n", WSAGetLastError());
@@ -266,19 +273,19 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 		}
 		else {
 			// No more bytes to send post another WSARecv() request
-			perIoData->recvBytes = 0;
-			perIoData->operation = RECEIVE;
+			client->recvBytes = 0;
+			client->operation = RECEIVE;
 			flags = 0;
-			ZeroMemory(&(perIoData->overlapped), sizeof(OVERLAPPED));
-			perIoData->dataBuff.len = DATA_BUFSIZE;
-			perIoData->dataBuff.buf = perIoData->buffer;
-			ZeroMemory(&(perIoData->buffer), sizeof(OVERLAPPED));
+			ZeroMemory(&(client->overlapped), sizeof(OVERLAPPED));
+			client->dataBuff.len = DATA_BUFSIZE;
+			client->dataBuff.buf = client->buffer;
+			ZeroMemory(&(client->buffer), sizeof(OVERLAPPED));
 			if (WSARecv(perHandleData->socket,
-				&(perIoData->dataBuff),
+				&(client->dataBuff),
 				1,
 				&transferredBytes,
 				&flags,
-				&(perIoData->overlapped), NULL) == SOCKET_ERROR) {
+				&(client->overlapped), NULL) == SOCKET_ERROR) {
 				if (WSAGetLastError() != ERROR_IO_PENDING) {
 					printf("WSARecv() failed with error %d\n", WSAGetLastError());
 					return 0;
@@ -289,16 +296,16 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 }
 
 // Communicate with client
-// @param perIoData - Pointer input data and info client
-void communicateClient(LPPER_IO_OPERATION_DATA perIoData) {
+// @param client - Pointer input data and info client
+void communicateClient(LP_Client client) {
 	string log;
 	// write clientIp and clientPort to log variable 
-	log = perIoData->clientIP;
-	log += ":" + to_string(perIoData->clientPort);
+	log = client->clientIP;
+	log += ":" + to_string(client->clientPort);
 	// write current time to log variable 
 	returnCurrentTime(log);
 	// handle message
-	handleProtocol(perIoData, log);
+	handleProtocol(client, log);
 }
 
 // Return current time when user send message to server
@@ -315,11 +322,11 @@ void returnCurrentTime(string &log) {
 }
 
 // Split protocol and message from client, handle protocol
-// @param perIoData - Pointer input data and info client
+// @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
-void handleProtocol(LPPER_IO_OPERATION_DATA perIoData, string &log) {
+void handleProtocol(LP_Client client, string &log) {
 
-	string str(perIoData->buffer);
+	string str(client->buffer);
 	// Write message to log variable
 	log += str + " $ ";
 	string key = str.substr(0, 4);
@@ -328,42 +335,42 @@ void handleProtocol(LPPER_IO_OPERATION_DATA perIoData, string &log) {
 		data = str.substr(5);
 	}
 	if (key == "USER") {
-		if (perIoData->isLogin) {
+		if (client->isLogin) {
 			// check login
 			log += "401";
-			strcpy(perIoData->buffer, "401 you are logged in, Please log out first!");
+			strcpy(client->buffer, "401 you are logged in, Please log out first!");
 			writeInLogFile(log);
 		}
 		else {
-			logIn(perIoData, log, data);
+			logIn(client, log, data);
 		}
 	}
 	else if (key == "POST") {
-		if (!perIoData->isLogin) {
+		if (!client->isLogin) {
 			// check login
 			log += "402";
-			strcpy(perIoData->buffer, "402 You are not log in");
+			strcpy(client->buffer, "402 You are not log in");
 			writeInLogFile(log);
 		}
 		else {
-			postMessage(perIoData, log, data);
+			postMessage(client, log, data);
 		}
 
 	}
 	else if (key == "QUIT") {
-		if (perIoData->isLogin) {
+		if (client->isLogin) {
 			// check login
 			log += "402";
-			strcpy(perIoData->buffer, "402 You are not log in");
+			strcpy(client->buffer, "402 You are not log in");
 			writeInLogFile(log);
 		}
 		else {
-			logOut(perIoData, log);
+			logOut(client, log);
 		}
 	}
 	else {
 		log += "403";
-		strcpy(perIoData->buffer, "403 Wrong protocol!");
+		strcpy(client->buffer, "403 Wrong protocol!");
 		// Write in log file
 		writeInLogFile(log);
 	}
@@ -381,10 +388,10 @@ void writeInLogFile(string log) {
 }
 
 // Login function handle login request from client
-// @param perIoData - Pointer input data and info client
+// @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void logIn(LPPER_IO_OPERATION_DATA perIoData, string &log, string data) {
+void logIn(LP_Client client, string &log, string data) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	EnterCriticalSection(&criticalSection);
@@ -405,8 +412,8 @@ void logIn(LPPER_IO_OPERATION_DATA perIoData, string &log, string data) {
 			else {
 				strcat_s(rs, "200 Login successful");
 				log += "200";
-				perIoData->isLogin = true;
-				strcpy(perIoData->username, username.c_str());
+				client->isLogin = true;
+				strcpy(client->username, username.c_str());
 			}
 			break;
 		}
@@ -416,7 +423,7 @@ void logIn(LPPER_IO_OPERATION_DATA perIoData, string &log, string data) {
 		log += "406";
 	}
 
-	strcpy(perIoData->buffer, rs);
+	strcpy(client->buffer, rs);
 	// Write in log file
 	writeInLogFile(log);
 	// close file "account.txt"
@@ -425,35 +432,35 @@ void logIn(LPPER_IO_OPERATION_DATA perIoData, string &log, string data) {
 }
 
 // postMessage function handle post message request
-// @param perIoData - Pointer input data and info client
+// @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void postMessage(LPPER_IO_OPERATION_DATA perIoData, string &log, string data) {
+void postMessage(LP_Client client, string &log, string data) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 
 	strcat_s(rs, "200 Post sucessful!");
 	log += "200";
 
-	strcpy(perIoData->buffer, rs);
+	strcpy(client->buffer, rs);
 	// Write in log file
 	writeInLogFile(log);
 }
 
 // Handle Log Out Request
-// @param perIoData - Pointer input data and info client
+// @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
-void logOut(LPPER_IO_OPERATION_DATA perIoData, string &log) {
+void logOut(LP_Client client, string &log) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	// Handle critical resource
 
 	strcat_s(rs, "200 Logout sucessfull!");
 	log += "200";
-	perIoData->isLogin = false;
-	memset(perIoData->username, 0, USER_LEN);
+	client->isLogin = false;
+	memset(client->username, 0, USER_LEN);
 
-	strcpy(perIoData->buffer, rs);
+	strcpy(client->buffer, rs);
 	// Write in log file
 	writeInLogFile(log);
 }
