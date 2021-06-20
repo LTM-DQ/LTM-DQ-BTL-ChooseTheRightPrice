@@ -378,13 +378,8 @@ void handleProtocol(LP_Session session, string &log) {
 		if (session->isLogin) {
 			// check login
 			log += "401";
-<<<<<<< HEAD
 			strcpy(session->buffer, "401 you are logged in, Please log out first!");
 			writeInLogFile(log);
-=======
-			strcpy(client->buffer, "401 you are logged in, Please log out first!");
-			/*writeInLogFile(log);*/
->>>>>>> 854ffe10768510c958742934ca8c720687eb4e45
 		}
 		else {
 			signIn(session, log, data);
