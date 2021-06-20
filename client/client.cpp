@@ -78,6 +78,7 @@ void recvMessage(char *buff) {
 	}
 	else if (strlen(buff) > 0) {
 		buff[ret] = 0;
+		cout << buff << endl;
 		string str = buff;
 		cout << str.substr(4) << endl;
 		cout << endl;
@@ -188,11 +189,23 @@ void logOut() {
 	recvMessage(buff);
 }
 
+// Log out function
+void createRoom() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "CREATE");
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
+
 // Menu function
 void menu() {
 	while (1) {
 		// display menu
-		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Exit\n");
+		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
@@ -208,6 +221,9 @@ void menu() {
 			logOut();
 			break;
 		case 4:
+			createRoom();
+			break;
+		case 5:
 			closesocket(clientSock);
 			WSACleanup();
 			exit(1);

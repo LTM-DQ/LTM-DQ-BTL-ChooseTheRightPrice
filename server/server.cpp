@@ -50,30 +50,31 @@ typedef struct {
 } Session, *LP_Session;
 
 typedef struct {
-	int numberOfPlayer;
-	Player roomMaster;
-	Player players[MAX_PLAYER_IN_ROOM];
-} Room, *LP_Room;
+	char username[USER_LEN];
+}Player, *LP_Player, **LP2_Player;
 
 typedef struct {
-	char username[USER_LEN];
-}Player, *LP_Player;
+	LP_Player roomMaster;
+	int numberOfPlayer;
+	LP_Player players[MAX_PLAYER_IN_ROOM];
+} Room, *LP_Room;
 
 CRITICAL_SECTION criticalSection;
 ofstream logFile;
 SQLHANDLE sqlConnHandle;
-Room rooms[MAX_ROOM];
+LP_Room rooms[MAX_ROOM];
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
-void communicateClient(LP_Session session);
+void communicateClient(LP_Session session, LP_Player player);
 void returnCurrentTime(string &log);
-void handleProtocol(LP_Session session, string &log);
+void handleProtocol(LP_Session session, string &log, LP_Player player);
 void writeInLogFile(string log);
 void signUp(LP_Session session, string &log, string data);
-void signIn(LP_Session session, string &log, string data);
+void signIn(LP_Session session, string &log, string data, LP_Player player);
 void logOut(LP_Session session, string &log);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 LPWSTR convertStringToLPWSTR(string param);
+void createRoom(LP_Session, string &log, LP_Player player);
 
 int main(int argc, char *argv[])
 {
@@ -135,6 +136,26 @@ int main(int argc, char *argv[])
 	sqlConnHandle = connectDB();
 
 	printf("Server Started!\n");
+
+	// allocate room
+	for (int i = 0; i < MAX_ROOM; ++i) {
+		if ((rooms[i] = (LP_Room)GlobalAlloc(GPTR, sizeof(Room))) == NULL) {
+			printf("GlobalAlloc() failed with error %d\n", GetLastError());
+			return 1;
+		}
+		if ((rooms[i]->roomMaster = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+			printf("GlobalAlloc() failed with error %d\n", GetLastError());
+			return 1;
+		}
+		rooms[i]->numberOfPlayer = 0;
+		for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
+			if ((rooms[i]->players[j] = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+				printf("GlobalAlloc() failed with error %d\n", GetLastError());
+				return 1;
+			}
+		}
+	}
+
 	//string query = "SELECT * FROM account WHERE username='quy' AND password='123'";
 	//wchar_t wquery[BUFF_QUERY];
 	//mbstowcs(wquery, query.c_str(), strlen(query.c_str()) + 1);//Plus null
@@ -184,7 +205,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Step 8: Create per I/O socket information structure to associate with the WSARecv call
-		if ((perIoData = (LP_PER_IO_DATA)GlobalAlloc(GPTR, sizeof(perIoData))) == NULL) {
+		if ((perIoData = (LP_PER_IO_DATA)GlobalAlloc(GPTR, sizeof(PER_IO_DATA))) == NULL) {
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
@@ -219,7 +240,12 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 	LP_Session session;
 	LP_PER_IO_DATA perIoData;
 	DWORD flags;
-
+	LP_Player player;
+	
+	if ((player = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+		printf("GlobalAlloc() failed with error %d\n", GetLastError());
+		return 1;
+	}
 	char queue[DATA_BUFSIZE];
 
 	while (TRUE) {
@@ -255,7 +281,9 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 				string strQueue = string(queue);
 				string data = strQueue.substr(0, strQueue.find(DELIMITER));
 				strcpy(session->buffer, data.c_str());
-				communicateClient(session);
+				// Handle message in client
+				communicateClient(session, player);
+
 				strcpy(queue, strstr(queue, DELIMITER) + strlen(DELIMITER));
 				if (strlen(queue) != 0) {
 					perIoData->dataBuff.buf = session->buffer;
@@ -332,7 +360,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 
 // Communicate with client
 // @param client - Pointer input data and info client
-void communicateClient(LP_Session session) {
+void communicateClient(LP_Session session, LP_Player player) {
 	string log;
 	// write clientIp and clientPort to log variable 
 	log = session->clientIP;
@@ -340,34 +368,14 @@ void communicateClient(LP_Session session) {
 	// write current time to log variable 
 	returnCurrentTime(log);
 	// handle message
-	handleProtocol(session, log);
-}
-
-// Return current time when user send message to server
-void returnCurrentTime(string &log) {
-	log += "[";
-	time_t current = time(0); // current time
-	tm *ltm = localtime(&current);
-	log += to_string(ltm->tm_mday) + "/"; // day
-	log += to_string(ltm->tm_mon + 1) + "/"; // month
-	log += to_string(ltm->tm_year + 1900) + " "; // year
-	log += to_string(ltm->tm_hour) + ":"; // hour
-	log += to_string(ltm->tm_min) + ":"; // minutes
-	log += to_string(ltm->tm_sec) + "]" + " $ "; // seconds
-}
-
-LPWSTR convertStringToLPWSTR(string param) {
-	wchar_t wquery[BUFF_QUERY];
-	mbstowcs(wquery, param.c_str(), strlen(param.c_str()) + 1);//Plus null
-	LPWSTR lquery = wquery;
-	return lquery;
+	handleProtocol(session, log, player);
 }
 
 // Split protocol and message from client, handle protocol
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
-void handleProtocol(LP_Session session, string &log) {
-
+void handleProtocol(LP_Session session, string &log, LP_Player player) {
+	cout << "check" << endl;
 	string str(session->buffer);
 	// Write message to log variable
 	log += str + " $ ";
@@ -395,7 +403,7 @@ void handleProtocol(LP_Session session, string &log) {
 			writeInLogFile(log);
 		}
 		else {
-			signIn(session, log, data);
+			signIn(session, log, data, player);
 		}
 	}
 	else if (key == "LOGOUT") {
@@ -409,25 +417,51 @@ void handleProtocol(LP_Session session, string &log) {
 			logOut(session, log);
 		}
 	}
+	else if (key == "CREATE") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 You are not log in");
+			writeInLogFile(log);
+		}
+		else {
+			createRoom(session, log, player);
+		}
+	}
 	else {
-		log += "403";
-		strcpy(session->buffer, "403 Wrong protocol!");
+		log += "500";
+		strcpy(session->buffer, "500 Wrong protocol!");
 		// Write in log file
 		writeInLogFile(log);
 	}
 }
 
-void writeInLogFile(string log) {
+void createRoom(LP_Session session, string &log, LP_Player player) {
+	int i;
 	EnterCriticalSection(&criticalSection);
-	logFile.open("log_20183816.txt", ios::out | ios::app);
-	if (logFile.is_open()) {
-		logFile << log + "\n";
-		logFile.close();
+	for (i = 0; i < MAX_ROOM; ++i) {
+		if (rooms[i]->numberOfPlayer == 0) {
+			break;
+		}
 	}
-	else cout << "Unable to open file.";
 	LeaveCriticalSection(&criticalSection);
+	if (i != MAX_ROOM) {
+		rooms[i]->roomMaster = player;
+		rooms[i]->players[0] = player;
+		rooms[i]->numberOfPlayer++;
+		string buff = "230 " + to_string(i);
+		strcpy(session->buffer, buff.c_str());
+		cout << session->buffer << endl;
+		log += "230";
+	}
+	else {
+		strcpy(session->buffer, "430 Full Room!");
+		log += "430";
+	}
+	writeInLogFile(log);
 }
 
+// Register user
 void signUp(LP_Session session, string &log, string data) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
@@ -470,7 +504,7 @@ void signUp(LP_Session session, string &log, string data) {
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void signIn(LP_Session session, string &log, string data) {
+void signIn(LP_Session session, string &log, string data, LP_Player player) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	SQLHANDLE sqlStmtHandle;
@@ -492,6 +526,7 @@ void signIn(LP_Session session, string &log, string data) {
 			strcpy(session->buffer, rs);
 			session->isLogin = true;
 			strcpy(session->username, strUsername.c_str());
+			strcpy(player->username, strUsername.c_str());
 		}
 		else {
 			strcat_s(rs, "410 Incorrect account and password !");
@@ -528,4 +563,37 @@ void sendMessage(char *buff, SOCKET &connectedSocket) {
 	if (ret == SOCKET_ERROR) {
 		printf("Error %d: Can't send data.\n", WSAGetLastError());
 	}
+}
+
+// write in log file
+void writeInLogFile(string log) {
+	EnterCriticalSection(&criticalSection);
+	logFile.open("log_20183816.txt", ios::out | ios::app);
+	if (logFile.is_open()) {
+		logFile << log + "\n";
+		logFile.close();
+	}
+	else cout << "Unable to open file.";
+	LeaveCriticalSection(&criticalSection);
+}
+
+// convert string to L string
+LPWSTR convertStringToLPWSTR(string param) {
+	wchar_t wquery[BUFF_QUERY];
+	mbstowcs(wquery, param.c_str(), strlen(param.c_str()) + 1);
+	LPWSTR lquery = wquery;
+	return lquery;
+}
+
+// Return current time when user send message to server
+void returnCurrentTime(string &log) {
+	log += "[";
+	time_t current = time(0); // current time
+	tm *ltm = localtime(&current);
+	log += to_string(ltm->tm_mday) + "/"; // day
+	log += to_string(ltm->tm_mon + 1) + "/"; // month
+	log += to_string(ltm->tm_year + 1900) + " "; // year
+	log += to_string(ltm->tm_hour) + ":"; // hour
+	log += to_string(ltm->tm_min) + ":"; // minutes
+	log += to_string(ltm->tm_sec) + "]" + " $ "; // seconds
 }
