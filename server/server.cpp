@@ -24,6 +24,8 @@ using namespace std;
 #define USER_LEN 200
 #define DELIMITER "\r\n"
 #define BUFF_QUERY 1024
+#define MAX_PLAYER_IN_ROOM 4
+#define MAX_ROOM 256
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -47,9 +49,20 @@ typedef struct {
 	CHAR buffer[DATA_BUFSIZE];
 } Session, *LP_Session;
 
+typedef struct {
+	int numberOfPlayer;
+	Player roomMaster;
+	Player players[MAX_PLAYER_IN_ROOM];
+} Room, *LP_Room;
+
+typedef struct {
+	char username[USER_LEN];
+}Player, *LP_Player;
+
 CRITICAL_SECTION criticalSection;
 ofstream logFile;
 SQLHANDLE sqlConnHandle;
+Room rooms[MAX_ROOM];
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
 void communicateClient(LP_Session session);
