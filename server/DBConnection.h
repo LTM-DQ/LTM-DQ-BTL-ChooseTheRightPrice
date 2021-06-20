@@ -70,7 +70,7 @@ COMPLETED:
 	getchar();
 	return NULL;
 }
-SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, SQLWCHAR* query) {
+SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, PWSTR query) {
 	SQLHANDLE sqlStmtHandle;
 	sqlStmtHandle = NULL;
 	if (sqlConnHandle == NULL) {
@@ -78,20 +78,19 @@ SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, SQLWCHAR* query) {
 	}
 	//if there is a problem connecting then exit application
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle)) {
-		cout << "cay vl" << endl;
+		cout << "check" << endl;
 		goto COMPLETED;
 	}
-	
 	//output
 	cout << "\n";
 	cout << "Executing T-SQL query...";
 	cout << "\n";
 	//if there is a problem executing the query then exit application
 	//else display query result
-	if (sqlStmtHandle == NULL) {
-		cout << "statement fail" << endl;
-	}
-	if (SQL_SUCCESS != SQLExecDirect(sqlStmtHandle, query, SQL_NTS)) {
+
+	SQLRETURN retcode = SQLExecDirect(sqlStmtHandle, (SQLWCHAR*)query, SQL_NTS);
+	
+	if (SQL_SUCCESS != retcode) {
 		cout << "Error querying SQL Server";
 		cout << "\n";
 		return sqlStmtHandle;
