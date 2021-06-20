@@ -73,7 +73,9 @@ COMPLETED:
 SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, PWSTR query) {
 	SQLHANDLE sqlStmtHandle;
 	sqlStmtHandle = NULL;
-	
+	if (sqlConnHandle == NULL) {
+		cout << "connect fail" << endl;
+	}
 	//if there is a problem connecting then exit application
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle)) {
 		cout << "check" << endl;
@@ -97,6 +99,7 @@ SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, PWSTR query) {
 		cout << "Query is successful ." << endl;
 		return sqlStmtHandle;
 	}
+
 	//close connection and free resources
 COMPLETED:
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
@@ -105,6 +108,6 @@ COMPLETED:
 	//pause the console window - exit when key is pressed
 	cout << "\nPress any key to exit...";
 	getchar();
-	return NULL;
+	return sqlStmtHandle;
 }
 #endif

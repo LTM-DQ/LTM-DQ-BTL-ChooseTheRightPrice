@@ -378,8 +378,13 @@ void handleProtocol(LP_Session session, string &log) {
 		if (session->isLogin) {
 			// check login
 			log += "401";
+<<<<<<< HEAD
 			strcpy(session->buffer, "401 you are logged in, Please log out first!");
 			writeInLogFile(log);
+=======
+			strcpy(client->buffer, "401 you are logged in, Please log out first!");
+			/*writeInLogFile(log);*/
+>>>>>>> 854ffe10768510c958742934ca8c720687eb4e45
 		}
 		else {
 			signIn(session, log, data);
@@ -422,7 +427,6 @@ void signUp(LP_Session session, string &log, string data) {
 	sqlStmtHandle = NULL;
 	string strUsername = data.substr(0, data.find("\n"));
 	string strPassword = data.substr(data.find("\n") + 1);
-
 	string query = "SELECT * FROM account WHERE username='" + strUsername + "'";
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
