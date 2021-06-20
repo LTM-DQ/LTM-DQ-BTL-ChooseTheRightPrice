@@ -234,6 +234,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 		if (client->operation == RECEIVE) {
 			char rs[DATA_BUFSIZE];
 			ZeroMemory(&rs, sizeof(DATA_BUFSIZE));
+			client->buffer[transferredBytes] = 0;
 			strcpy(queue, client->buffer);
 			// Handle byte stream
 			while (strstr(queue, DELIMITER) != NULL)
@@ -300,7 +301,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 			ZeroMemory(&(client->overlapped), sizeof(OVERLAPPED));
 			client->dataBuff.len = DATA_BUFSIZE;
 			client->dataBuff.buf = client->buffer;
-			ZeroMemory(&(client->buffer), sizeof(OVERLAPPED));
+			ZeroMemory(&(client->buffer), sizeof(DATA_BUFSIZE));
 			if (WSARecv(perHandleData->socket,
 				&(client->dataBuff),
 				1,
@@ -367,7 +368,7 @@ void handleProtocol(LP_Client client, string &log) {
 			// check login
 			log += "401";
 			strcpy(client->buffer, "401 you are logged in, Please log out first!");
-			writeInLogFile(log);
+			/*writeInLogFile(log);*/
 		}
 		else {
 			signUp(client, log, data);
@@ -427,18 +428,20 @@ void signUp(LP_Client client, string &log, string data) {
 	PWSTR lquery = convertStringToLPWSTR(query);
 	// handle query
 	EnterCriticalSection(&criticalSection);
-	if (sqlStmtHandle = handleQuery(sqlConnHandle, lquery)) {
-		LeaveCriticalSection(&criticalSection);
-		if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+	LeaveCriticalSection(&criticalSection);
+	int fetch = SQLFetch(sqlStmtHandle);
+	if (sqlStmtHandle) {
+		if (fetch == SQL_SUCCESS) {
 			strcat_s(rs, "400 Account already exists!");
 			log += "400";
 			strcpy(client->buffer, rs);
 		}
 		else {
-			query = "insert into account values ('" + strUsername + "','" + strPassword + "')";
+			query = "INSERT INTO account VALUES ('" + strUsername + "','" + strPassword + "')";
 			// convert string to L string
 			lquery = convertStringToLPWSTR(query);
-			// handle query
+			// handle query	
 			EnterCriticalSection(&criticalSection);
 			sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
 			LeaveCriticalSection(&criticalSection);
@@ -447,7 +450,7 @@ void signUp(LP_Client client, string &log, string data) {
 			strcpy(client->buffer, rs);
 		}
 	}
-	
+	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 	writeInLogFile(log);
 }
 
@@ -467,9 +470,11 @@ void signIn(LP_Client client, string &log, string data) {
 	PWSTR lquery = convertStringToLPWSTR(query);
 	// handle query
 	EnterCriticalSection(&criticalSection);
-	if (sqlStmtHandle = handleQuery(sqlConnHandle, lquery)) {
-		LeaveCriticalSection(&criticalSection);
-		if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+	LeaveCriticalSection(&criticalSection);
+	int fetch = SQLFetch(sqlStmtHandle);
+	if (sqlStmtHandle) {
+		if (fetch == SQL_SUCCESS) {
 			strcat_s(rs, "210 Sign in success!");
 			log += "210";
 			strcpy(client->buffer, rs);
@@ -482,6 +487,7 @@ void signIn(LP_Client client, string &log, string data) {
 			strcpy(client->buffer, rs);
 		}
 	}
+	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 	writeInLogFile(log);
 }
 
