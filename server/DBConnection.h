@@ -73,27 +73,34 @@ COMPLETED:
 SQLHANDLE handleQuery(SQLHANDLE sqlConnHandle, SQLWCHAR* query) {
 	SQLHANDLE sqlStmtHandle;
 	sqlStmtHandle = NULL;
-	
+	if (sqlConnHandle == NULL) {
+		cout << "connect fail" << endl;
+	}
 	//if there is a problem connecting then exit application
-	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle))
+	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle)) {
+		cout << "cay vl" << endl;
 		goto COMPLETED;
+	}
+	
 	//output
 	cout << "\n";
 	cout << "Executing T-SQL query...";
 	cout << "\n";
 	//if there is a problem executing the query then exit application
 	//else display query result
-	
+	if (sqlStmtHandle == NULL) {
+		cout << "statement fail" << endl;
+	}
 	if (SQL_SUCCESS != SQLExecDirect(sqlStmtHandle, query, SQL_NTS)) {
 		cout << "Error querying SQL Server";
 		cout << "\n";
-		goto COMPLETED;
-		return NULL;
+		return sqlStmtHandle;
 	}
 	else {
 		cout << "Query is successful ." << endl;
 		return sqlStmtHandle;
 	}
+
 	//close connection and free resources
 COMPLETED:
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
@@ -102,6 +109,6 @@ COMPLETED:
 	//pause the console window - exit when key is pressed
 	cout << "\nPress any key to exit...";
 	getchar();
-	return NULL;
+	return sqlStmtHandle;
 }
 #endif

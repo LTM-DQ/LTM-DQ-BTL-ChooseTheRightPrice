@@ -378,7 +378,7 @@ void handleProtocol(LP_Client client, string &log) {
 			// check login
 			log += "401";
 			strcpy(client->buffer, "401 you are logged in, Please log out first!");
-			writeInLogFile(log);
+			/*writeInLogFile(log);*/
 		}
 		else {
 			signIn(client, log, data);
@@ -421,34 +421,50 @@ void signUp(LP_Client client, string &log, string data) {
 	sqlStmtHandle = NULL;
 	string strUsername = data.substr(0, data.find("\n"));
 	string strPassword = data.substr(data.find("\n") + 1);
-
-	string query = "SELECT * FROM account WHERE username='" + strUsername + "'";
-	// convert string to L string
-	PWSTR lquery = convertStringToLPWSTR(query);
-	// handle query
-	EnterCriticalSection(&criticalSection);
-	if (sqlStmtHandle = handleQuery(sqlConnHandle, lquery)) {
-		LeaveCriticalSection(&criticalSection);
-		if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
-			strcat_s(rs, "400 Account already exists!");
-			log += "400";
-			strcpy(client->buffer, rs);
-		}
-		else {
-			query = "insert into account values ('" + strUsername + "','" + strPassword + "')";
-			// convert string to L string
-			lquery = convertStringToLPWSTR(query);
-			// handle query
-			EnterCriticalSection(&criticalSection);
-			sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
-			LeaveCriticalSection(&criticalSection);
-			strcat_s(rs, "200 Sign up success!");
-			log += "200";
-			strcpy(client->buffer, rs);
+	cout << strUsername << " " << strPassword << endl;
+	int checkExistAccount = 0;
+	if (checkExistAccount == 0) {
+		cout << "vao 1" << endl;
+		string query = "SELECT * FROM account WHERE username='" + strUsername + "'";
+		cout << query << endl;
+		// convert string to L string
+		PWSTR lquery = convertStringToLPWSTR(query);
+		// handle query
+		sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+		if (sqlStmtHandle) {
+			cout << "vao 2" << endl;
+			if (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+				cout << "vao 2.1" << endl;
+				cout << "acoount ton tai" << endl;
+				strcat_s(rs, "400 Account already exists!");
+				log += "400";
+				strcpy(client->buffer, rs);
+				checkExistAccount = 1;
+			}
+			SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 		}
 	}
+	if (checkExistAccount == 0) {
+		cout << "vao 3" << endl;
+		string query = "insert into account values ('" + strUsername + "','" + strPassword + "')";
+		cout << query << endl;
+		// convert string to L string
+		PWSTR lquery = convertStringToLPWSTR(query);
+		// handle query
+		sqlStmtHandle = NULL;
+		sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+		int sqlfetch = SQLFetch(sqlStmtHandle);
+		cout << "vao 4" << endl;
+		strcat_s(rs, "200 Sign up success!");
+		log += "200";
+		strcpy(client->buffer, rs);
+		
+		
+	}
+	cout << "rs " << rs << endl;
+	cout << "client -> buffer " << client->buffer << endl;
 	
-	writeInLogFile(log);
+	/*writeInLogFile(log);*/
 }
 
 // Login function handle login request from client
