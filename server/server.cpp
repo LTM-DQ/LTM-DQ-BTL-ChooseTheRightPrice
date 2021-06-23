@@ -51,18 +51,22 @@ typedef struct {
 
 typedef struct {
 	char username[USER_LEN];
+	int score;
 }Player, *LP_Player, **LP2_Player;
 
 typedef struct {
+	string roomID;
 	LP_Player roomMaster;
 	int numberOfPlayer;
 	LP_Player players[MAX_PLAYER_IN_ROOM];
+	boolean is_started;
 } Room, *LP_Room;
 
 CRITICAL_SECTION criticalSection;
 ofstream logFile;
 SQLHANDLE sqlConnHandle;
 LP_Room rooms[MAX_ROOM];
+int numberOfRooms = 0;
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
 void communicateClient(LP_Session session, LP_Player player);
@@ -75,12 +79,16 @@ void logOut(LP_Session session, string &log);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 LPWSTR convertStringToLPWSTR(string param);
 void createRoom(LP_Session, string &log, LP_Player player);
+string gen_random(const int len);
+void gointoRoomById(LP_Session session, string &log, LP_Player player, string roomID);
+void gointoRoomAtRandom(LP_Session session, string &log, LP_Player player);
 
 int main(int argc, char *argv[])
 {
 	SOCKADDR_IN serverAddr;
 	SOCKET listenSock, acceptSock;
 	HANDLE completionPort;
+
 	SYSTEM_INFO systemInfo;
 	LP_Session session;
 	LP_PER_IO_DATA perIoData;
@@ -375,7 +383,6 @@ void communicateClient(LP_Session session, LP_Player player) {
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 void handleProtocol(LP_Session session, string &log, LP_Player player) {
-	cout << "check" << endl;
 	string str(session->buffer);
 	// Write message to log variable
 	log += str + " $ ";
@@ -428,6 +435,20 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			createRoom(session, log, player);
 		}
 	}
+	else if (key == "GOINTO") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 You are not log in");
+			writeInLogFile(log);
+		}
+		else if (data.length()) {
+			gointoRoomById(session, log, player, data);
+		}
+		else {
+			gointoRoomAtRandom(session, log, player);
+		}
+	}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
@@ -446,10 +467,13 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 	}
 	LeaveCriticalSection(&criticalSection);
 	if (i != MAX_ROOM) {
+		numberOfRooms++;
 		rooms[i]->roomMaster = player;
 		rooms[i]->players[0] = player;
 		rooms[i]->numberOfPlayer++;
-		string buff = "230 " + to_string(i);
+		rooms[i]->roomID = gen_random(6);
+		rooms[i]->is_started = false;
+		string buff = "230 " + rooms[i]->roomID;
 		strcpy(session->buffer, buff.c_str());
 		cout << session->buffer << endl;
 		log += "230";
@@ -459,6 +483,56 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 		log += "430";
 	}
 	writeInLogFile(log);
+}
+
+void gointoRoomById(LP_Session session, string &log, LP_Player player, string roomID) {
+	int i;
+	EnterCriticalSection(&criticalSection);
+	for (i = 0; i < MAX_ROOM; ++i) {
+		if (rooms[i]->roomID.length() == 0) { 
+			strcpy(session->buffer, "440 Room doesn't exist.");
+			log += "440";
+			writeInLogFile(log);
+			LeaveCriticalSection(&criticalSection);
+			return;
+		}
+		if (rooms[i]->roomID == roomID) {
+			
+			if (rooms[i]->numberOfPlayer == MAX_PLAYER_IN_ROOM) {
+				strcpy(session->buffer, "441 Full players in room.");
+				log += "441";
+				writeInLogFile(log);
+				LeaveCriticalSection(&criticalSection);
+				return;
+			}
+			if (rooms[i]->is_started) {
+				strcpy(session->buffer, "442 Game is being played.");
+				log += "442";
+				writeInLogFile(log);
+				LeaveCriticalSection(&criticalSection);
+				return;
+			}
+			//Join succesfful
+			rooms[i]->players[rooms[i]->numberOfPlayer] = player;
+			rooms[i]->numberOfPlayer++;
+			string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
+			strcpy(session->buffer, buff.c_str());
+			log += "240";
+			writeInLogFile(log);
+			LeaveCriticalSection(&criticalSection);
+			return;
+		}
+	}
+	strcpy(session->buffer, "440 Room doesn't exist.");
+	log += "440";
+	writeInLogFile(log);
+	LeaveCriticalSection(&criticalSection);
+}
+void gointoRoomAtRandom(LP_Session session, string &log, LP_Player player) {
+	
+}
+void exitRoom(LP_Session session, string &log, LP_Player player) {
+	strcpy(session->buffer, "280");
 }
 
 // Register user
@@ -597,3 +671,26 @@ void returnCurrentTime(string &log) {
 	log += to_string(ltm->tm_min) + ":"; // minutes
 	log += to_string(ltm->tm_sec) + "]" + " $ "; // seconds
 }
+
+string gen_random(const int len) {
+
+	string tmp_s;
+	static const char alphanum[] =
+		"0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz";
+
+	srand((unsigned)time(NULL) * getpid());
+
+	tmp_s.reserve(len);
+
+	for (int i = 0; i < len; ++i)
+		tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+
+
+	return tmp_s;
+
+}
+
+
+
