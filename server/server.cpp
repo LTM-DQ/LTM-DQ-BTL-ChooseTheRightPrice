@@ -84,19 +84,19 @@ LP_Room rooms[MAX_ROOM];
 int numberOfRooms = 0;
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
-void communicateClient(LP_Session session, LP_Player player);
+void communicateClient(LP_Session session);
 void returnCurrentTime(string &log);
-void handleProtocol(LP_Session session, string &log, LP_Player player);
+void handleProtocol(LP_Session session, string &log);
 void writeInLogFile(string log);
 void signUp(LP_Session session, string &log, string data);
-void signIn(LP_Session session, string &log, string data, LP_Player player);
+void signIn(LP_Session session, string &log, string data);
 void logOut(LP_Session session, string &log);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 LPWSTR convertStringToLPWSTR(string param);
-void createRoom(LP_Session, string &log, LP_Player player);
+void createRoom(LP_Session, string &log);
 string gen_random(const int len);
-void gointoRoom(LP_Session session, string &log, LP_Player player, string roomID);
-void exitRoom(LP_Session session, string &log, LP_Player player);
+void gointoRoom(LP_Session session, string &log, string roomID);
+void exitRoom(LP_Session session, string &log);
 
 int main(int argc, char *argv[])
 {
@@ -303,7 +303,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 				string data = strQueue.substr(0, strQueue.find(DELIMITER));
 				strcpy(session->buffer, data.c_str());
 				// Handle message in client
-				communicateClient(session, session->player);
+				communicateClient(session);
 
 				strcpy(queue, strstr(queue, DELIMITER) + strlen(DELIMITER));
 				if (strlen(queue) != 0) {
@@ -381,7 +381,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 
 // Communicate with client
 // @param client - Pointer input data and info client
-void communicateClient(LP_Session session, LP_Player player) {
+void communicateClient(LP_Session session) {
 	string log;
 	// write clientIp and clientPort to log variable 
 	log = session->clientIP;
@@ -389,13 +389,13 @@ void communicateClient(LP_Session session, LP_Player player) {
 	// write current time to log variable 
 	returnCurrentTime(log);
 	// handle message
-	handleProtocol(session, log, player);
+	handleProtocol(session, log);
 }
 
 // Split protocol and message from client, handle protocol
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
-void handleProtocol(LP_Session session, string &log, LP_Player player) {
+void handleProtocol(LP_Session session, string &log) {
 	string str(session->buffer);
 	// Write message to log variable
 	log += str + " $ ";
@@ -423,7 +423,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			signIn(session, log, data, player);
+			signIn(session, log, data);
 		}
 	}
 	else if (key == "LOGOUT") {
@@ -445,7 +445,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			createRoom(session, log, player);
+			createRoom(session, log);
 		}
 	}
 	else if (key == "GOINTO") {
@@ -456,7 +456,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			gointoRoom(session, log, player, data);
+			gointoRoom(session, log, data);
 		}
 	}
 	else if (key == "EXITRM") {
@@ -467,7 +467,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			exitRoom(session, log, player);
+			exitRoom(session, log);
 		}
 	}
 	else {
@@ -478,7 +478,8 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 	}
 }
 
-void createRoom(LP_Session session, string &log, LP_Player player) {
+void createRoom(LP_Session session, string &log) {
+	LP_Player player = session->player;
 	int i;
 	EnterCriticalSection(&criticalSection);
 	for (i = 0; i < MAX_ROOM; ++i) {
@@ -507,33 +508,35 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 	}
 	writeInLogFile(log);
 }
-void  startt(LP_Session session, string &log, LP_Player player) {
+void  startt(LP_Session session, string &log) {
 	//room
 	//list players in room
 	//gui den cac players
 	//for
 
 }
-void gointoRoom(LP_Session session, string &log, LP_Player player, string roomID) {
+void gointoRoom(LP_Session session, string &log, string roomID) {
 	EnterCriticalSection(&criticalSection);
+	LP_Player player = session->player;
 	if (roomID.length() == 0) {
 		cout << "go into room at random" << endl;
 	//go into the room at random
 		if (numberOfRooms == 0) {
 			LeaveCriticalSection(&criticalSection);
-			createRoom(session, log, player);
+			createRoom(session, log);
 		}
 		else {
 			for (int j = 0; j < numberOfRooms; ++j) { //find in rooms which has at least 1 player
 				if (rooms[j]->numberOfPlayer < MAX_PLAYER_IN_ROOM && rooms[j]->is_started == false) { 
 					//Join room successfully
-					for (int i = 0; i < rooms[j]->numberOfPlayer; ++i) {
-						if (rooms[j]->players[i] = NULL) {
+					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { // ERROR here
+						if (rooms[j]->players[i] == NULL) {
 							rooms[j]->players[i] = player;
 							player->position = i;
-							player->roomID = rooms[j]->roomID;
+							cout << "player->position " << i << endl;
 						}
 					}
+					player->roomID = rooms[j]->roomID;
 					rooms[j]->numberOfPlayer++;
 					string buff = "240 " + rooms[j]->roomID + "\n" + to_string(rooms[j]->numberOfPlayer);
 					strcpy(session->buffer, buff.c_str());
@@ -546,7 +549,7 @@ void gointoRoom(LP_Session session, string &log, LP_Player player, string roomID
 			//if don't have any satified rooms in numberOfRooms
 			if (numberOfRooms < MAX_ROOM) {
 				LeaveCriticalSection(&criticalSection);
-				createRoom(session, log, player);
+				createRoom(session, log);
 			}
 			else {
 				//full room
@@ -608,8 +611,9 @@ void gointoRoom(LP_Session session, string &log, LP_Player player, string roomID
 	}
 	
 }
-void exitRoom(LP_Session session, string &log, LP_Player player) {
+void exitRoom(LP_Session session, string &log) {
 	EnterCriticalSection(&criticalSection);
+	LP_Player player = session->player;
 	if (player->roomID.length() == 0) {
 		strcpy(session->buffer, "481 You isn't in any rooms.");
 		log += "481";
@@ -624,18 +628,25 @@ void exitRoom(LP_Session session, string &log, LP_Player player) {
 			}
 		}
 		cout << i << " " << rooms[i]->roomID << endl;
+		rooms[i]->players[player->position] = NULL;
+		rooms[i]->numberOfPlayer = rooms[i]->numberOfPlayer - 1;
+		player->roomID = "";
 		if (rooms[i]->numberOfPlayer == 1) {
-			cout << "join here" << endl;
 			rooms[i]->roomMaster = NULL;
-			rooms[i]->players[player->position] = NULL;
-			rooms[i]->numberOfPlayer = rooms[i]->numberOfPlayer - 1;
-			player->roomID = "";
-			cout << "nukber of player: " << rooms[i]->numberOfPlayer << endl;
-			strcpy(session->buffer, "280 Leave room successfully.");
-			log += "280";
-			writeInLogFile(log);
-			LeaveCriticalSection(&criticalSection);
+			numberOfRooms--;
 		}
+		else {
+			//reset room master
+			for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+				if (rooms[i]->players[j]) {
+					rooms[i]->roomMaster = rooms[i]->players[j];
+				}
+			}
+		}
+		strcpy(session->buffer, "280 Leave room successfully.");
+		log += "280";
+		writeInLogFile(log);
+		LeaveCriticalSection(&criticalSection);
 	}
 	
 }
@@ -683,7 +694,8 @@ void signUp(LP_Session session, string &log, string data) {
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void signIn(LP_Session session, string &log, string data, LP_Player player) {
+void signIn(LP_Session session, string &log, string data) {
+	LP_Player player = session->player;
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	SQLHANDLE sqlStmtHandle;
