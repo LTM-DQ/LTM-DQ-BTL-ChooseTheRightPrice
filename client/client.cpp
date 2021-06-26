@@ -213,20 +213,34 @@ void gointoRoomById() {
 	cout << buff << endl;
 	// Send message
 	sendMessage(buff, strlen(buff));
-	cout << "send ok" << endl;
 	// Receive message
 	recvMessage(buff);
-	cout << "rec ok" << endl;
 }
 
 void gointoRoomAtRandom() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "GOINTO ");
+	strcat_s(buff, DELIMITER);
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
 
+void exitRoom() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "EXITRM");
+	strcat_s(buff, DELIMITER);
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
 }
 // Menu function
 void menu() {
 	while (1) {
 		// display menu
-		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n6.Go into the room at random\n7. Exit\n");
+		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n6.Go into the room at random\n7.Leave the room\n8. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
@@ -250,7 +264,10 @@ void menu() {
 		case 6:
 			gointoRoomAtRandom();
 			break;
-		case 7:
+		case 7: 
+			exitRoom();
+			break;
+		case 8:
 			closesocket(clientSock);
 			WSACleanup();
 			exit(1);
