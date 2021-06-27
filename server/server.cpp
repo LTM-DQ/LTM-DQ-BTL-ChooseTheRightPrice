@@ -47,13 +47,17 @@ typedef struct {
 	char username[USER_LEN];
 	bool isLogin;
 	CHAR buffer[DATA_BUFSIZE];
+	string sessionID;
+	int userID;
+	LP_Player player;
 } Session, *LP_Session;
 
 typedef struct {
-	char username[USER_LEN];
+	int userID;
 	int score;
-}Player, *LP_Player, **LP2_Player;
-
+	int roomLoc;
+}Player, *LP_Player;
+	
 typedef struct {
 	string roomID;
 	LP_Player roomMaster;
@@ -74,7 +78,7 @@ void returnCurrentTime(string &log);
 void handleProtocol(LP_Session session, string &log, LP_Player player);
 void writeInLogFile(string log);
 void signUp(LP_Session session, string &log, string data);
-void signIn(LP_Session session, string &log, string data, LP_Player player);
+void signIn(LP_Session session, string &log, string data);
 void logOut(LP_Session session, string &log);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 LPWSTR convertStringToLPWSTR(string param);
@@ -82,6 +86,8 @@ void createRoom(LP_Session, string &log, LP_Player player);
 string gen_random(const int len);
 void gointoRoomById(LP_Session session, string &log, LP_Player player, string roomID);
 void gointoRoomAtRandom(LP_Session session, string &log, LP_Player player);
+void startGame(LP_Session session, string &log, LP_Player player);
+void getQuiz(LP_Session session, string &log, LP_Player player);
 
 int main(int argc, char *argv[])
 {
@@ -203,6 +209,10 @@ int main(int argc, char *argv[])
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
+		if ((session->player = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+			printf("GlobalAlloc() failed with error %d\n", GetLastError());
+			return 1;
+		}
 
 		// Step 7: Associate the accepted socket with the original completion port
 		printf("Socket number %d got connected...\n", acceptSock);
@@ -227,7 +237,8 @@ int main(int argc, char *argv[])
 		flags = 0;
 		inet_ntop(AF_INET, &clientAddr.sin_addr, session->clientIP, sizeof(session->clientIP));
 		session->clientPort = ntohs(clientAddr.sin_port);
-		session->isLogin = false;
+		session->isLogin = false; 
+		session->sessionID = gen_random(6);
 
 		if (WSARecv(acceptSock, &(perIoData->dataBuff), 1, &transferredBytes, &flags, &(perIoData->overlapped), NULL) == SOCKET_ERROR) {
 			if (WSAGetLastError() != ERROR_IO_PENDING) {
@@ -248,12 +259,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 	LP_Session session;
 	LP_PER_IO_DATA perIoData;
 	DWORD flags;
-	LP_Player player;
 	
-	if ((player = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
-		printf("GlobalAlloc() failed with error %d\n", GetLastError());
-		return 1;
-	}
 	char queue[DATA_BUFSIZE];
 
 	while (TRUE) {
@@ -290,7 +296,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 				string data = strQueue.substr(0, strQueue.find(DELIMITER));
 				strcpy(session->buffer, data.c_str());
 				// Handle message in client
-				communicateClient(session, player);
+				communicateClient(session, session->player);
 
 				strcpy(queue, strstr(queue, DELIMITER) + strlen(DELIMITER));
 				if (strlen(queue) != 0) {
@@ -391,6 +397,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 	if (str.length() > 6) {
 		data = str.substr(7);
 	}
+	cout << key << endl;
 	if (key == "SIGNUP") {
 		if (session->isLogin) {
 			// check login
@@ -410,7 +417,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			signIn(session, log, data, player);
+			signIn(session, log, data);
 		}
 	}
 	else if (key == "LOGOUT") {
@@ -449,12 +456,71 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			gointoRoomAtRandom(session, log, player);
 		}
 	}
+	else if (key == "STARTT") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 You are not log in");
+			writeInLogFile(log);
+		}
+		else {
+			startGame(session, log, player);
+		}
+	}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
 		// Write in log file
 		writeInLogFile(log);
 	}
+}
+
+// start game
+void startGame(LP_Session session, string &log, LP_Player player) {
+	EnterCriticalSection(&criticalSection);
+	bool checkMaster = rooms[player->roomLoc]->roomMaster->userID != player->userID;
+	LeaveCriticalSection(&criticalSection);
+	if (checkMaster) {
+		// if player is not room master
+		log += "451";
+		strcpy(session->buffer, "451 player is not room master");
+	}
+	else {
+		//getQuiz(session, log, player);
+		log += "250";
+		strcpy(session->buffer, "250 start game");
+	}
+	cout << session->buffer << endl;
+	writeInLogFile(log);
+}
+
+// get quiz
+void getQuiz(LP_Session session, string &log, LP_Player player) {
+	char rs[DATA_BUFSIZE];
+	memset(rs, 0, DATA_BUFSIZE);
+	SQLHANDLE sqlStmtHandle;
+	sqlStmtHandle = NULL;
+	int quizID = 1;
+	string query = "SELECT * FROM quiz WHERE id=" + to_string(quizID);
+	// convert string to L string
+	PWSTR lquery = convertStringToLPWSTR(query);
+	// handle query
+	EnterCriticalSection(&criticalSection);
+	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+	LeaveCriticalSection(&criticalSection);
+	int fetch = SQLFetch(sqlStmtHandle);
+	if (sqlStmtHandle) {
+		if (fetch == SQL_SUCCESS) {
+			SQLINTEGER ptrSqlVersion;
+			SQLGetData(sqlStmtHandle, 1, SQL_C_ULONG, &session->userID, SQL_RESULT_LEN, &ptrSqlVersion);
+		}
+		else {
+			
+		}
+	}
+	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
+	writeInLogFile(log);
+
 }
 
 void createRoom(LP_Session session, string &log, LP_Player player) {
@@ -467,6 +533,8 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 	}
 	LeaveCriticalSection(&criticalSection);
 	if (i != MAX_ROOM) {
+		player->userID = session->userID;
+		player->roomLoc = i;
 		numberOfRooms++;
 		rooms[i]->roomMaster = player;
 		rooms[i]->players[0] = player;
@@ -475,7 +543,6 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 		rooms[i]->is_started = false;
 		string buff = "230 " + rooms[i]->roomID;
 		strcpy(session->buffer, buff.c_str());
-		cout << session->buffer << endl;
 		log += "230";
 	}
 	else {
@@ -578,7 +645,7 @@ void signUp(LP_Session session, string &log, string data) {
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
-void signIn(LP_Session session, string &log, string data, LP_Player player) {
+void signIn(LP_Session session, string &log, string data) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	SQLHANDLE sqlStmtHandle;
@@ -595,12 +662,13 @@ void signIn(LP_Session session, string &log, string data, LP_Player player) {
 	int fetch = SQLFetch(sqlStmtHandle);
 	if (sqlStmtHandle) {
 		if (fetch == SQL_SUCCESS) {
+			SQLINTEGER ptrSqlVersion;
+			SQLGetData(sqlStmtHandle, 1, SQL_C_ULONG, &session->userID, SQL_RESULT_LEN, &ptrSqlVersion);
 			strcat_s(rs, "210 Sign in success!");
 			log += "210";
 			strcpy(session->buffer, rs);
 			session->isLogin = true;
 			strcpy(session->username, strUsername.c_str());
-			strcpy(player->username, strUsername.c_str());
 		}
 		else {
 			strcat_s(rs, "410 Incorrect account and password !");

@@ -222,11 +222,25 @@ void gointoRoomById() {
 void gointoRoomAtRandom() {
 
 }
+
+// start game
+void startGame() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "STARTT");
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
+
 // Menu function
 void menu() {
 	while (1) {
 		// display menu
-		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n6.Go into the room at random\n7. Exit\n");
+		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n6.Go into the room at random\n");
+		printf("7. Start game\n8. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
@@ -251,6 +265,9 @@ void menu() {
 			gointoRoomAtRandom();
 			break;
 		case 7:
+			startGame();
+			break;
+		case 8:
 			closesocket(clientSock);
 			WSACleanup();
 			exit(1);
