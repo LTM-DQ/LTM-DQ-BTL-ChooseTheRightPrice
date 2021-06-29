@@ -42,6 +42,22 @@ typedef struct {
 
 typedef struct {
 	SOCKET socket;
+	int userID;
+	//answer
+	char username[USER_LEN];
+	int score;
+	string roomID;
+	int position; //position in Room
+	int roomLoc; // position of room in array
+}Player, *LP_Player;
+
+typedef struct {
+	char question[BUFF_QUERY];
+	char correct_answer[BUFF_QUERY];
+}Question, *LP_Question;
+
+typedef struct {
+	SOCKET socket;
 	char clientIP[INET_ADDRSTRLEN];
 	int clientPort;
 	char username[USER_LEN];
@@ -53,18 +69,16 @@ typedef struct {
 } Session, *LP_Session;
 
 typedef struct {
-	int userID;
-	int score;
-	int roomLoc;
-}Player, *LP_Player;
-	
-typedef struct {
 	string roomID;
 	LP_Player roomMaster;
 	int numberOfPlayer;
 	LP_Player players[MAX_PLAYER_IN_ROOM];
 	boolean is_started;
+	LP_Question quiz;
 } Room, *LP_Room;
+//TODO:
+//save user answer for each question to compare ?
+//login in one command line
 
 CRITICAL_SECTION criticalSection;
 ofstream logFile;
@@ -73,21 +87,21 @@ LP_Room rooms[MAX_ROOM];
 int numberOfRooms = 0;
 
 unsigned __stdcall serverWorkerThread(LPVOID CompletionPortID);
-void communicateClient(LP_Session session, LP_Player player);
+void communicateClient(LP_Session session);
 void returnCurrentTime(string &log);
-void handleProtocol(LP_Session session, string &log, LP_Player player);
+void handleProtocol(LP_Session session, string &log);
 void writeInLogFile(string log);
 void signUp(LP_Session session, string &log, string data);
 void signIn(LP_Session session, string &log, string data);
 void logOut(LP_Session session, string &log);
 void sendMessage(char *buff, SOCKET &connectedSocket);
 LPWSTR convertStringToLPWSTR(string param);
-void createRoom(LP_Session, string &log, LP_Player player);
+void createRoom(LP_Session, string &log);
 string gen_random(const int len);
-void gointoRoomById(LP_Session session, string &log, LP_Player player, string roomID);
-void gointoRoomAtRandom(LP_Session session, string &log, LP_Player player);
-void startGame(LP_Session session, string &log, LP_Player player);
-void getQuiz(LP_Session session, string &log, LP_Player player);
+void gointoRoom(LP_Session session, string &log, string roomID);
+void startGame(LP_Session session, string &log);
+void getQuiz(LP_Session session, string &log);
+void exitRoom(LP_Session session, string &log);
 
 int main(int argc, char *argv[])
 {
@@ -157,16 +171,22 @@ int main(int argc, char *argv[])
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
-		if ((rooms[i]->roomMaster = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+		if ((rooms[i]->quiz = (LP_Question)GlobalAlloc(GPTR, sizeof(Question))) == NULL) {
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
+		/*if ((rooms[i]->roomMaster = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+			printf("GlobalAlloc() failed with error %d\n", GetLastError());
+			return 1;
+		}*/
+		rooms[i]->roomMaster = 0;
 		rooms[i]->numberOfPlayer = 0;
 		for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
-			if ((rooms[i]->players[j] = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
+			/*if ((rooms[i]->players[j] = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
 				printf("GlobalAlloc() failed with error %d\n", GetLastError());
 				return 1;
-			}
+			}*/
+			rooms[i]->players[j] = 0;
 		}
 	}
 
@@ -213,7 +233,6 @@ int main(int argc, char *argv[])
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
-
 		// Step 7: Associate the accepted socket with the original completion port
 		printf("Socket number %d got connected...\n", acceptSock);
 		session->socket = acceptSock;
@@ -296,7 +315,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 				string data = strQueue.substr(0, strQueue.find(DELIMITER));
 				strcpy(session->buffer, data.c_str());
 				// Handle message in client
-				communicateClient(session, session->player);
+				communicateClient(session);
 
 				strcpy(queue, strstr(queue, DELIMITER) + strlen(DELIMITER));
 				if (strlen(queue) != 0) {
@@ -374,7 +393,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 
 // Communicate with client
 // @param client - Pointer input data and info client
-void communicateClient(LP_Session session, LP_Player player) {
+void communicateClient(LP_Session session) {
 	string log;
 	// write clientIp and clientPort to log variable 
 	log = session->clientIP;
@@ -382,13 +401,13 @@ void communicateClient(LP_Session session, LP_Player player) {
 	// write current time to log variable 
 	returnCurrentTime(log);
 	// handle message
-	handleProtocol(session, log, player);
+	handleProtocol(session, log);
 }
 
 // Split protocol and message from client, handle protocol
 // @param client - Pointer input data and info client
 // @param log - reference variable store the activity log 
-void handleProtocol(LP_Session session, string &log, LP_Player player) {
+void handleProtocol(LP_Session session, string &log) {
 	string str(session->buffer);
 	// Write message to log variable
 	log += str + " $ ";
@@ -439,7 +458,7 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			createRoom(session, log, player);
+			createRoom(session, log);
 		}
 	}
 	else if (key == "GOINTO") {
@@ -449,11 +468,19 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			strcpy(session->buffer, "402 You are not log in");
 			writeInLogFile(log);
 		}
-		else if (data.length()) {
-			gointoRoomById(session, log, player, data);
+		else {
+			gointoRoom(session, log, data);
+		}
+	}
+	else if (key == "EXITRM") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 You are not log in");
+			writeInLogFile(log);
 		}
 		else {
-			gointoRoomAtRandom(session, log, player);
+			exitRoom(session, log);
 		}
 	}
 	else if (key == "STARTT") {
@@ -464,9 +491,20 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 			writeInLogFile(log);
 		}
 		else {
-			startGame(session, log, player);
+			startGame(session, log);
 		}
 	}
+	//else if (key == "QUIZZZ") {
+	//	if (!session->isLogin) {
+	//		// check login
+	//		log += "402";
+	//		strcpy(session->buffer, "402 You are not log in");
+	//		writeInLogFile(log);
+	//	}
+	//	else {
+	//		getQuiz(session, log);
+	//	}
+	//}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
@@ -476,9 +514,12 @@ void handleProtocol(LP_Session session, string &log, LP_Player player) {
 }
 
 // start game
-void startGame(LP_Session session, string &log, LP_Player player) {
+void startGame(LP_Session session, string &log) {
+	LP_Player player = session->player;
+	int roomIndex;
 	EnterCriticalSection(&criticalSection);
-	bool checkMaster = rooms[player->roomLoc]->roomMaster->userID != player->userID;
+	roomIndex = player->roomLoc;
+	bool checkMaster = rooms[roomIndex]->roomMaster->userID != player->userID;
 	LeaveCriticalSection(&criticalSection);
 	if (checkMaster) {
 		// if player is not room master
@@ -486,44 +527,69 @@ void startGame(LP_Session session, string &log, LP_Player player) {
 		strcpy(session->buffer, "451 player is not room master");
 	}
 	else {
-		//getQuiz(session, log, player);
+		getQuiz(session, log);
 		log += "250";
 		strcpy(session->buffer, "250 start game");
+		char buff[DATA_BUFSIZE];
+		strcpy(buff, "250 start game");
+		EnterCriticalSection(&criticalSection);
+		cout << "check outside" << endl;
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			cout << rooms[roomIndex]->players[i] << endl;
+			if (rooms[roomIndex]->players[i]) {
+				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
+					cout << "check" << endl;
+					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+				}
+			}
+		}
+		LeaveCriticalSection(&criticalSection);
 	}
 	cout << session->buffer << endl;
 	writeInLogFile(log);
 }
 
 // get quiz
-void getQuiz(LP_Session session, string &log, LP_Player player) {
-	char rs[DATA_BUFSIZE];
-	memset(rs, 0, DATA_BUFSIZE);
+void getQuiz(LP_Session session, string &log) {
+	string rs;
 	SQLHANDLE sqlStmtHandle;
+	LP_Question quiz;
 	sqlStmtHandle = NULL;
-	int quizID = 1;
+	int quizID = 2;
 	string query = "SELECT * FROM quiz WHERE id=" + to_string(quizID);
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
 	// handle query
 	EnterCriticalSection(&criticalSection);
 	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
+	quiz = rooms[session->player->roomLoc]->quiz;
 	LeaveCriticalSection(&criticalSection);
+
 	int fetch = SQLFetch(sqlStmtHandle);
 	if (sqlStmtHandle) {
 		if (fetch == SQL_SUCCESS) {
 			SQLINTEGER ptrSqlVersion;
-			SQLGetData(sqlStmtHandle, 1, SQL_C_ULONG, &session->userID, SQL_RESULT_LEN, &ptrSqlVersion);
+			SQLGetData(sqlStmtHandle, 2, SQL_C_CHAR, &quiz->question, SQL_RESULT_LEN, &ptrSqlVersion);
+			SQLGetData(sqlStmtHandle, 3, SQL_C_CHAR, &quiz->correct_answer, SQL_RESULT_LEN, &ptrSqlVersion);
+			log += "290";
+			rs = quiz->question;
+			rs = "290 " + rs;
+			cout << quiz->question << endl;
+			cout << quiz->correct_answer << endl;
 		}
 		else {
-			
+			rs = "490 quiz does not exists!";
+			log += "490";
 		}
 	}
+	strcpy(session->buffer, rs.c_str());
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 	writeInLogFile(log);
-
 }
 
-void createRoom(LP_Session session, string &log, LP_Player player) {
+
+void createRoom(LP_Session session, string &log) {
+	LP_Player player = session->player;
 	int i;
 	EnterCriticalSection(&criticalSection);
 	for (i = 0; i < MAX_ROOM; ++i) {
@@ -533,14 +599,16 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 	}
 	LeaveCriticalSection(&criticalSection);
 	if (i != MAX_ROOM) {
-		player->userID = session->userID;
 		player->roomLoc = i;
+		player->socket = session->socket;
 		numberOfRooms++;
 		rooms[i]->roomMaster = player;
 		rooms[i]->players[0] = player;
 		rooms[i]->numberOfPlayer++;
 		rooms[i]->roomID = gen_random(6);
 		rooms[i]->is_started = false;
+		player->roomID = rooms[i]->roomID;
+		player->position = 0;
 		string buff = "230 " + rooms[i]->roomID;
 		strcpy(session->buffer, buff.c_str());
 		log += "230";
@@ -551,55 +619,156 @@ void createRoom(LP_Session session, string &log, LP_Player player) {
 	}
 	writeInLogFile(log);
 }
+void  startt(LP_Session session, string &log) {
+	//room
+	//list players in room
+	//gui den cac players
+	//for
 
-void gointoRoomById(LP_Session session, string &log, LP_Player player, string roomID) {
-	int i;
+}
+void gointoRoom(LP_Session session, string &log, string roomID) {
 	EnterCriticalSection(&criticalSection);
-	for (i = 0; i < MAX_ROOM; ++i) {
-		if (rooms[i]->roomID.length() == 0) { 
-			strcpy(session->buffer, "440 Room doesn't exist.");
-			log += "440";
-			writeInLogFile(log);
+	LP_Player player = session->player;
+	if (roomID.length() == 0) {
+		cout << "go into room at random" << endl;
+	//go into the room at random
+		if (numberOfRooms == 0) {
 			LeaveCriticalSection(&criticalSection);
-			return;
+			createRoom(session, log);
 		}
-		if (rooms[i]->roomID == roomID) {
-			
-			if (rooms[i]->numberOfPlayer == MAX_PLAYER_IN_ROOM) {
-				strcpy(session->buffer, "441 Full players in room.");
-				log += "441";
+		else {
+			for (int j = 0; j < numberOfRooms; ++j) { //find in rooms which has at least 1 player
+				if (rooms[j]->numberOfPlayer < MAX_PLAYER_IN_ROOM && rooms[j]->is_started == false) { 
+					//Join room successfully
+					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { // ERROR here
+						if (rooms[j]->players[i] == NULL) {
+							rooms[j]->players[i] = player;
+							player->position = i;
+							cout << "player->position " << i << endl;
+						}
+					}
+					player->roomID = rooms[j]->roomID;
+					player->roomLoc = j;
+					player->socket = session->socket;
+					rooms[j]->numberOfPlayer++;
+					string buff = "240 " + rooms[j]->roomID + "\n" + to_string(rooms[j]->numberOfPlayer);
+					strcpy(session->buffer, buff.c_str());
+					log += "240";
+					writeInLogFile(log);
+					LeaveCriticalSection(&criticalSection);
+					return;
+				}
+			}
+			//if don't have any satified rooms in numberOfRooms
+			if (numberOfRooms < MAX_ROOM) {
+				LeaveCriticalSection(&criticalSection);
+				createRoom(session, log);
+			}
+			else {
+				//full room
+				strcpy(session->buffer, "443 Don't have available rooms.");
+				log += "443";
 				writeInLogFile(log);
 				LeaveCriticalSection(&criticalSection);
-				return;
 			}
-			if (rooms[i]->is_started) {
-				strcpy(session->buffer, "442 Game is being played.");
-				log += "442";
-				writeInLogFile(log);
-				LeaveCriticalSection(&criticalSection);
-				return;
-			}
-			//Join succesfful
-			rooms[i]->players[rooms[i]->numberOfPlayer] = player;
-			rooms[i]->numberOfPlayer++;
-			string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
-			strcpy(session->buffer, buff.c_str());
-			log += "240";
-			writeInLogFile(log);
-			LeaveCriticalSection(&criticalSection);
-			return;
 		}
 	}
-	strcpy(session->buffer, "440 Room doesn't exist.");
-	log += "440";
-	writeInLogFile(log);
-	LeaveCriticalSection(&criticalSection);
-}
-void gointoRoomAtRandom(LP_Session session, string &log, LP_Player player) {
+	else {
+		cout << "go into room by id " << roomID << endl;
+	//go into the room by id
+		for (int i = 0; i < MAX_ROOM; ++i) {
+			if (rooms[i]->roomID.length() == 0) {
+				strcpy(session->buffer, "440 Room doesn't exist.");
+				log += "440";
+				writeInLogFile(log);
+				LeaveCriticalSection(&criticalSection);
+				return;
+			}
+			if (rooms[i]->roomID == roomID) {
+
+				if (rooms[i]->numberOfPlayer == MAX_PLAYER_IN_ROOM) {
+					strcpy(session->buffer, "441 Full players in room.");
+					log += "441";
+					writeInLogFile(log);
+					LeaveCriticalSection(&criticalSection);
+					return;
+				}
+				if (rooms[i]->is_started) {
+					strcpy(session->buffer, "442 Game is being played.");
+					log += "442";
+					writeInLogFile(log);
+					LeaveCriticalSection(&criticalSection);
+					return;
+				}
+				//Join room succesfful
+				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
+					cout << "check player in room " << rooms[i]->players[j] << endl;
+					if (!rooms[i]->players[j]) {
+						rooms[i]->players[j] = player;
+						player->position = j;
+						cout << "position " << j << endl;
+						player->roomID = rooms[j]->roomID;
+						break;
+					}
+				}
+				player->socket = session->socket;
+				player->roomLoc = i;
+				cout << "loc " << i << endl;
+				
+				rooms[i]->numberOfPlayer++;
+				string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
+				strcpy(session->buffer, buff.c_str());
+				log += "240";
+				writeInLogFile(log);
+				LeaveCriticalSection(&criticalSection);
+				return;
+			}
+		}
+		strcpy(session->buffer, "440 Room doesn't exist.");
+		log += "440";
+		writeInLogFile(log);
+		LeaveCriticalSection(&criticalSection);
+	}
 	
 }
-void exitRoom(LP_Session session, string &log, LP_Player player) {
-	strcpy(session->buffer, "280");
+void exitRoom(LP_Session session, string &log) {
+	EnterCriticalSection(&criticalSection);
+	LP_Player player = session->player;
+	if (player->roomID.length() == 0) {
+		strcpy(session->buffer, "481 You isn't in any rooms.");
+		log += "481";
+		writeInLogFile(log);
+		LeaveCriticalSection(&criticalSection);
+	}
+	else {
+		int i;
+		for (i = 0; i < numberOfRooms; ++i) {
+			if (rooms[i]->roomID == player->roomID) {
+				break;
+			}
+		}
+		cout << i << " " << rooms[i]->roomID << endl;
+		rooms[i]->players[player->position] = NULL;
+		rooms[i]->numberOfPlayer = rooms[i]->numberOfPlayer - 1;
+		player->roomID = "";
+		if (rooms[i]->numberOfPlayer == 1) {
+			rooms[i]->roomMaster = NULL;
+			numberOfRooms--;
+		}
+		else {
+			//reset room master
+			for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+				if (rooms[i]->players[j]) {
+					rooms[i]->roomMaster = rooms[i]->players[j];
+				}
+			}
+		}
+		strcpy(session->buffer, "280 Leave room successfully.");
+		log += "280";
+		writeInLogFile(log);
+		LeaveCriticalSection(&criticalSection);
+	}
+	
 }
 
 // Register user
@@ -646,6 +815,7 @@ void signUp(LP_Session session, string &log, string data) {
 // @param log - reference variable store the activity log 
 // @param data - message without protocol send by client
 void signIn(LP_Session session, string &log, string data) {
+	LP_Player player = session->player;
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
 	SQLHANDLE sqlStmtHandle;
@@ -669,6 +839,8 @@ void signIn(LP_Session session, string &log, string data) {
 			strcpy(session->buffer, rs);
 			session->isLogin = true;
 			strcpy(session->username, strUsername.c_str());
+			player->userID = session->userID;
+			strcpy(player->username, session->username);
 		}
 		else {
 			strcat_s(rs, "410 Incorrect account and password !");
