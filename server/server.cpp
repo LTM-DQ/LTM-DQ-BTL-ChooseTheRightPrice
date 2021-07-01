@@ -49,6 +49,7 @@ typedef struct {
 	int position; //position in Room
 }Player, *LP_Player, **LP2_Player;
 
+
 typedef struct {
 	SOCKET socket;
 	char clientIP[INET_ADDRSTRLEN];
@@ -97,6 +98,7 @@ void createRoom(LP_Session, string &log);
 string gen_random(const int len);
 void gointoRoom(LP_Session session, string &log, string roomID);
 void exitRoom(LP_Session session, string &log);
+void updateLoginStatus(string username, string isLogin);
 
 int main(int argc, char *argv[])
 {
@@ -273,12 +275,16 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 		if (GetQueuedCompletionStatus(completionPort, &transferredBytes,
 			(LPDWORD)&session, (LPOVERLAPPED *)&perIoData, INFINITE) == 0) {
 			printf("GetQueuedCompletionStatus() failed with error %d\n", GetLastError());
+			string username(session->username);
+			updateLoginStatus(username, "0");
 			return 0;
 		}
 		// Check to see if an error has occurred on the socket and if so
 		// then close the socket and cleanup the SOCKET_INFORMATION structure
 		// associated with the socket
 		if (transferredBytes == 0) {
+			string username(session->username);
+			updateLoginStatus(username, "0");
 			printf("Closing socket %d\n", session->socket);
 			if (closesocket(session->socket) == SOCKET_ERROR) {
 				printf("closesocket() failed with error %d\n", WSAGetLastError());
@@ -529,11 +535,12 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 			for (int j = 0; j < numberOfRooms; ++j) { //find in rooms which has at least 1 player
 				if (rooms[j]->numberOfPlayer < MAX_PLAYER_IN_ROOM && rooms[j]->is_started == false) { 
 					//Join room successfully
-					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { // ERROR here
-						if (rooms[j]->players[i] == NULL) {
+					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { 
+						if (rooms[j]->players[i]->roomID.length() == 0) {
 							rooms[j]->players[i] = player;
 							player->position = i;
 							cout << "player->position " << i << endl;
+							break;
 						}
 					}
 					player->roomID = rooms[j]->roomID;
@@ -588,13 +595,14 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 					return;
 				}
 				//Join room succesfful
-				for (int j = 0; j < rooms[j]->numberOfPlayer; ++j) {
-					if (rooms[i]->players[j] = NULL) {
+				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
+					if (rooms[i]->players[i]->roomID.length() == 0) {
 						rooms[i]->players[j] = player;
 						player->position = j;
-						player->roomID = rooms[j]->roomID;
+						break;
 					}
 				}
+				player->roomID = rooms[i]->roomID;
 				rooms[i]->numberOfPlayer++;
 				string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
 				strcpy(session->buffer, buff.c_str());
@@ -628,11 +636,11 @@ void exitRoom(LP_Session session, string &log) {
 			}
 		}
 		cout << i << " " << rooms[i]->roomID << endl;
-		rooms[i]->players[player->position] = NULL;
+		rooms[i]->players[player->position]->roomID = "";
 		rooms[i]->numberOfPlayer = rooms[i]->numberOfPlayer - 1;
 		player->roomID = "";
 		if (rooms[i]->numberOfPlayer == 1) {
-			rooms[i]->roomMaster = NULL;
+			rooms[i]->roomMaster = 0;
 			numberOfRooms--;
 		}
 		else {
@@ -659,6 +667,7 @@ void signUp(LP_Session session, string &log, string data) {
 	sqlStmtHandle = NULL;
 	string strUsername = data.substr(0, data.find("\n"));
 	string strPassword = data.substr(data.find("\n") + 1);
+	string strIsLogin = "0";
 	string query = "SELECT * FROM account WHERE username='" + strUsername + "'";
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
@@ -674,7 +683,7 @@ void signUp(LP_Session session, string &log, string data) {
 			strcpy(session->buffer, rs);
 		}
 		else {
-			query = "INSERT INTO account VALUES ('" + strUsername + "','" + strPassword + "')";
+			query = "INSERT INTO account VALUES ('" + strUsername + "','" + strPassword + "','" + strIsLogin + "')";
 			// convert string to L string
 			lquery = convertStringToLPWSTR(query);
 			// handle query	
@@ -712,10 +721,25 @@ void signIn(LP_Session session, string &log, string data) {
 	int fetch = SQLFetch(sqlStmtHandle);
 	if (sqlStmtHandle) {
 		if (fetch == SQL_SUCCESS) {
+			//check already log in
+			SQLINTEGER islogin;
+			SQLINTEGER ptrSqlVersion;
+			SQLGetData(sqlStmtHandle, 4, SQL_C_LONG, &islogin, SQL_RESULT_LEN, &ptrSqlVersion);
+			
+			if (islogin == 1) {
+				log += "411";
+				strcpy(session->buffer, "411 This account have already logged in before!");
+				writeInLogFile(log);
+				SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
+				return;
+			}
+			//login successfully
 			strcat_s(rs, "210 Sign in success!");
 			log += "210";
 			strcpy(session->buffer, rs);
+			
 			session->isLogin = true;
+			updateLoginStatus(strUsername, "1");
 			strcpy(session->username, strUsername.c_str());
 			strcpy(player->username, strUsername.c_str());
 		}
@@ -726,6 +750,7 @@ void signIn(LP_Session session, string &log, string data) {
 		}
 	}
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
+	
 	writeInLogFile(log);
 }
 
@@ -735,8 +760,9 @@ void signIn(LP_Session session, string &log, string data) {
 void logOut(LP_Session session, string &log) {
 	char rs[DATA_BUFSIZE];
 	memset(rs, 0, DATA_BUFSIZE);
-	// Handle critical resource
 
+	string username(session->username);
+	updateLoginStatus(username, "0");
 	strcat_s(rs, "220 Logout sucessfull!");
 	log += "220";
 	session->isLogin = false;
@@ -747,6 +773,17 @@ void logOut(LP_Session session, string &log) {
 	writeInLogFile(log);
 }
 
+
+void updateLoginStatus(string username, string isLogin) {
+	string query = "UPDATE account SET islogin = '"+ isLogin+ "' WHERE username='" + username + "'";
+	PWSTR lquery1 = convertStringToLPWSTR(query);
+	SQLHANDLE sqlStmtHandle1;
+	EnterCriticalSection(&criticalSection);
+	sqlStmtHandle1 = handleQuery(sqlConnHandle, lquery1);
+	SQLFetch(sqlStmtHandle1);
+	LeaveCriticalSection(&criticalSection);
+	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle1);
+}
 // Send message
 void sendMessage(char *buff, SOCKET &connectedSocket) {
 
