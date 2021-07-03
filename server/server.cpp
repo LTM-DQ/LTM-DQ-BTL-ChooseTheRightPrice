@@ -500,17 +500,17 @@ void handleProtocol(LP_Session session, string &log) {
 			startGame(session, log);
 		}
 	}
-	//else if (key == "QUIZZZ") {
-	//	if (!session->isLogin) {
-	//		// check login
-	//		log += "402";
-	//		strcpy(session->buffer, "402 You are not log in");
-	//		writeInLogFile(log);
-	//	}
-	//	else {
-	//		getQuiz(session, log);
-	//	}
-	//}
+	else if (key == "QUIZZZ") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 you are not log in");
+			writeInLogFile(log);
+		}
+		else {
+			getQuiz(session, log);
+		}
+	}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
@@ -540,9 +540,11 @@ void startGame(LP_Session session, string &log) {
 		strcpy(buff, "250 start game");
 		EnterCriticalSection(&criticalSection);
 		cout << "check outside" << endl;
+		cout << "room Master " << rooms[roomIndex]->roomMaster<< " " << rooms[roomIndex]->roomMaster-> userID << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
+				cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
 				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
 					cout << "check" << endl;
 					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
@@ -625,13 +627,7 @@ void createRoom(LP_Session session, string &log) {
 	}
 	writeInLogFile(log);
 }
-void  startt(LP_Session session, string &log) {
-	//room
-	//list players in room
-	//gui den cac players
-	//for
 
-}
 void gointoRoom(LP_Session session, string &log, string roomID) {
 	EnterCriticalSection(&criticalSection);
 	LP_Player player = session->player;
@@ -709,19 +705,21 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				}
 				//Join room succesfful
 				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
-
-					if (rooms[i]->players[i]->roomID.length() == 0) {
+					cout << "test2" << endl;
+					cout << "roomID length " << rooms[i]->players[j] << endl;
+					if (!rooms[i]->players[j]) {
+						cout << "test1 " << endl;
 						rooms[i]->players[j] = player;
 						player->position = j;
 						break;
 					}
 				}
 				player->roomID = rooms[i]->roomID;
-				}
+
 				player->socket = session->socket;
 				player->roomLoc = i;
 				cout << "loc " << i << endl;
-				
+
 				rooms[i]->numberOfPlayer++;
 				string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
 				strcpy(session->buffer, buff.c_str());
@@ -730,13 +728,15 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				LeaveCriticalSection(&criticalSection);
 				return;
 			}
+			}
 		}
 		strcpy(session->buffer, "440 Room doesn't exist.");
 		log += "440";
 		writeInLogFile(log);
 		LeaveCriticalSection(&criticalSection);
 	}
-	
+
+//TODO: fix that
 void exitRoom(LP_Session session, string &log) {
 	EnterCriticalSection(&criticalSection);
 	LP_Player player = session->player;
@@ -842,8 +842,9 @@ void signIn(LP_Session session, string &log, string data) {
 			//check already log in
 			SQLINTEGER islogin;
 			SQLINTEGER ptrSqlVersion;
+			SQLGetData(sqlStmtHandle, 1, SQL_C_ULONG, &session->userID, SQL_RESULT_LEN, &ptrSqlVersion);
 			SQLGetData(sqlStmtHandle, 4, SQL_C_LONG, &islogin, SQL_RESULT_LEN, &ptrSqlVersion);
-			
+			cout << "session -> userID " << session->userID << endl;
 			if (islogin == 1) {
 				log += "411";
 				strcpy(session->buffer, "411 This account have already logged in before!");
@@ -855,11 +856,11 @@ void signIn(LP_Session session, string &log, string data) {
 			strcat_s(rs, "210 Sign in success!");
 			log += "210";
 			strcpy(session->buffer, rs);
-			
 			session->isLogin = true;
 			updateLoginStatus(strUsername, "1");
 			strcpy(session->username, strUsername.c_str());
 			player->userID = session->userID;
+			player->roomID == "";
 			strcpy(player->username, session->username);
 		}
 		else {
@@ -895,6 +896,7 @@ void logOut(LP_Session session, string &log) {
 
 void updateLoginStatus(string username, string isLogin) {
 	string query = "UPDATE account SET islogin = '"+ isLogin+ "' WHERE username='" + username + "'";
+	cout << query << endl;
 	PWSTR lquery1 = convertStringToLPWSTR(query);
 	SQLHANDLE sqlStmtHandle1;
 	EnterCriticalSection(&criticalSection);
