@@ -215,6 +215,7 @@ void gointoRoomById() {
 	sendMessage(buff, strlen(buff));
 	// Receive message
 	recvMessage(buff);
+	recvMessage(buff);
 }
 
 void gointoRoomAtRandom() {
@@ -236,11 +237,37 @@ void exitRoom() {
 	// Receive message
 	recvMessage(buff);
 }
+
+// start game
+void startGame() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "STARTT");
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
+
+// get quiz
+void getQuiz() {
+	memset(buff, 0, BUFF_SIZE);
+	strcat_s(buff, "QUIZZZ");
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
+
 // Menu function
 void menu() {
 	while (1) {
 		// display menu
-		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n6.Go into the room at random\n7.Leave the room\n8. Exit\n");
+		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n");
+		printf("6.Go into the room at random\n7.Leave the room\n8. get quiz\n9. Start game\n10. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
@@ -268,6 +295,12 @@ void menu() {
 			exitRoom();
 			break;
 		case 8:
+			getQuiz();
+			break;
+		case 9:
+			startGame();
+			break;
+		case 10:
 			closesocket(clientSock);
 			WSACleanup();
 			exit(1);
