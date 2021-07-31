@@ -314,6 +314,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 			ZeroMemory(&rs, sizeof(DATA_BUFSIZE));
 			perIoData->buffer[transferredBytes] = 0;
 			strcpy(queue, perIoData->buffer);
+			cout << "result ..: " << queue << endl;
 			// Handle byte stream
 			while (strstr(queue, DELIMITER) != NULL)
 			{
@@ -598,6 +599,7 @@ void getQuiz(LP_Session session, string &log) {
 
 void createRoom(LP_Session session, string &log) {
 	LP_Player player = session->player;
+	cout << "creatw new room " << endl;
 	int i;
 	EnterCriticalSection(&criticalSection);
 	for (i = 0; i < MAX_ROOM; ++i) {
@@ -617,7 +619,8 @@ void createRoom(LP_Session session, string &log) {
 		rooms[i]->is_started = false;
 		player->roomID = rooms[i]->roomID;
 		player->position = 0;
-		string buff = "230 " + rooms[i]->roomID;
+		string buff = "230 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer) + "\n" + player->username;
+		
 		strcpy(session->buffer, buff.c_str());
 		log += "230";
 	}
@@ -644,6 +647,7 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 					//Join room successfully
 					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { 
 						if (rooms[j]->players[i]->roomID.length() == 0) {
+							cout << "roomID length " << rooms[i]->players[j] << endl;
 							rooms[j]->players[i] = player;
 							player->position = i;
 							cout << "player->position " << i << endl;
@@ -680,13 +684,14 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 		cout << "go into room by id " << roomID << endl;
 	//go into the room by id
 		for (int i = 0; i < MAX_ROOM; ++i) {
+			cout << "room i : " << rooms[i]->roomID << endl;
 			if (rooms[i]->roomID.length() == 0) {
 				strcpy(session->buffer, "440 Room doesn't exist.");
 				log += "440";
 				writeInLogFile(log);
 				LeaveCriticalSection(&criticalSection);
 				return;
-			}
+				}
 			if (rooms[i]->roomID == roomID) {
 
 				if (rooms[i]->numberOfPlayer == MAX_PLAYER_IN_ROOM) {
@@ -705,7 +710,6 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				}
 				//Join room succesfful
 				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
-					cout << "test2" << endl;
 					cout << "roomID length " << rooms[i]->players[j] << endl;
 					if (!rooms[i]->players[j]) {
 						cout << "test1 " << endl;
@@ -729,11 +733,12 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				return;
 			}
 			}
-		}
 		strcpy(session->buffer, "440 Room doesn't exist.");
 		log += "440";
 		writeInLogFile(log);
 		LeaveCriticalSection(&criticalSection);
+		}
+		
 	}
 
 //TODO: fix that
@@ -847,7 +852,7 @@ void signIn(LP_Session session, string &log, string data) {
 			cout << "session -> userID " << session->userID << endl;
 			if (islogin == 1) {
 				log += "411";
-				strcpy(session->buffer, "411 This account have already logged in before!");
+				strcpy(session->buffer, "You logged in from a different location");
 				writeInLogFile(log);
 				SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 				return;

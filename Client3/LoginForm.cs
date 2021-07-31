@@ -58,8 +58,7 @@ namespace Client3
                 IP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5500);
                 client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 client.Connect(IP);
-                
-
+               
             }
             catch (Exception)
             {
@@ -109,6 +108,7 @@ namespace Client3
                 txtPasswordLogin.PasswordChar = '\0';
             }
         }
+
     }
 }
 
@@ -173,17 +173,30 @@ public static class Globals
 
     public static void handleMessage(String opcode, String payload)
     {
-        if (opcode == "210")
+        switch (opcode)
         {
-            //open main form
-            Client3.LoginForm.instance.Invoke((MethodInvoker)delegate
-            {
-                // close the form on the forms thread
-                Client3.LoginForm.instance.Hide();
-                var mainform1 = new Client3.MainForm();
-                mainform1.Closed += (s, args) => Client3.LoginForm.instance.Close();
-                mainform1.Show();
-            });
+            case "210":
+                //open main form
+                Client3.LoginForm.instance.Invoke((MethodInvoker)delegate
+                {
+                    // close the form on the forms thread
+                    Client3.LoginForm.instance.Hide();
+                    var mainform1 = new Client3.MainForm();
+                    mainform1.Closed += (s, args) => Client3.LoginForm.instance.Close();
+                    mainform1.Show();
+                });
+                break;
+            case "410":
+                //Username or password is incorrect
+                MessageBox.Show(payload);
+                break;
+            case "411":
+                //Username or password is incorrect
+                MessageBox.Show(payload);
+                break;
+            default:
+                Console.WriteLine("test");
+                break;
         }
     }
 }
