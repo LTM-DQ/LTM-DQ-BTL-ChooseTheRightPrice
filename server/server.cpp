@@ -43,7 +43,7 @@ typedef struct {
 typedef struct {
 	SOCKET socket;
 	int userID;
-	//answer
+	string answer;
 	char username[USER_LEN];
 	int score;
 	string roomID;
@@ -73,6 +73,7 @@ typedef struct {
 	string roomID;
 	LP_Player roomMaster;
 	int numberOfPlayer;
+	int numberAnswer;
 	LP_Player players[MAX_PLAYER_IN_ROOM];
 	boolean is_started;
 	LP_Question quiz;
@@ -104,6 +105,8 @@ void startGame(LP_Session session, string &log);
 void getQuiz(LP_Session session, string &log);
 void exitRoom(LP_Session session, string &log);
 void updateLoginStatus(string username, string isLogin);
+void handleAnswer(LP_Session session, string &log, string data);
+void getResult(LP_Session session, string &log);
 
 int main(int argc, char *argv[])
 {
@@ -511,12 +514,50 @@ void handleProtocol(LP_Session session, string &log) {
 			getQuiz(session, log);
 		}
 	}
+	else if (key == "ANSWER") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 you are not log in");
+			writeInLogFile(log);
+		}
+		else {
+			handleAnswer(session, log, data);
+		}
+	}
+	else if (key == "RESULT") {
+		if (!session->isLogin) {
+			// check login
+			log += "402";
+			strcpy(session->buffer, "402 you are not log in");
+			writeInLogFile(log);
+		}
+		else {
+			getResult(session, log);
+		}
+	}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
 		// Write in log file
 		writeInLogFile(log);
 	}
+}
+
+void getResult(LP_Session session, string &log) {
+
+}
+
+// handle answer
+void handleAnswer(LP_Session session, string &log, string data) {
+	LP_Player player = session->player;
+	session->player->answer = data;
+	EnterCriticalSection(&criticalSection);
+	rooms[session->player->roomLoc]->numberAnswer++;
+	LeaveCriticalSection(&criticalSection);
+	string rs = "200 " + data;
+	strcpy(session->buffer, rs.c_str());
+	writeInLogFile(log);
 }
 
 // start game
@@ -539,6 +580,7 @@ void startGame(LP_Session session, string &log) {
 		char buff[DATA_BUFSIZE];
 		strcpy(buff, "250 start game");
 		EnterCriticalSection(&criticalSection);
+		rooms[roomIndex]->numberAnswer = 0;
 		cout << "check outside" << endl;
 		cout << "room Master " << rooms[roomIndex]->roomMaster<< " " << rooms[roomIndex]->roomMaster-> userID << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
