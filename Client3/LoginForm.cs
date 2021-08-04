@@ -194,6 +194,32 @@ public static class Globals
                 //Username or password is incorrect
                 MessageBox.Show(payload);
                 break;
+            case "230":
+                string[] payloadData = payload.Split('\n');
+                string roomCode = payloadData[0];
+                string username = payloadData[2];
+                var labelRoomCode = Client3.PlayForm.instance.labelRoomCode;
+                Console.WriteLine(labelRoomCode);
+                labelRoomCode.Invoke((MethodInvoker)delegate {
+                    labelRoomCode.Text = roomCode;
+                });
+                var labelUsers = Client3.PlayForm.instance.labelUsers;
+                var labelUser1 = labelUsers[0];
+                int lengthUser = Client3.PlayForm.instance.labelUsers.Length;
+                for(int i=0; i < lengthUser; i++)
+                {
+                    labelUser1 = labelUsers[i];
+                }
+                labelUser1.Invoke((MethodInvoker)delegate
+                {
+                    labelUser1.Text = username;
+                });
+                var pictureBoxUser1 = Client3.PlayForm.instance.pictureBoxUser1;
+                pictureBoxUser1.BackgroundImage = Client3.Properties.Resources.user;
+                pictureBoxUser1.BackgroundImageLayout = ImageLayout.Stretch;
+
+                break;
+
             default:
                 Console.WriteLine("test");
                 break;

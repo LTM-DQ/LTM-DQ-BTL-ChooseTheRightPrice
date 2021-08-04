@@ -32,7 +32,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.btnJoinRoomRandom = new System.Windows.Forms.Button();
             this.btnJoinRoomByCode = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtRoomCodeInput = new System.Windows.Forms.TextBox();
             this.btnCreateRoom = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.SuspendLayout();
@@ -75,12 +75,12 @@
             this.btnJoinRoomByCode.UseVisualStyleBackColor = true;
             this.btnJoinRoomByCode.Click += new System.EventHandler(this.button2_Click);
             // 
-            // textBox1
+            // txtRoomCodeInput
             // 
-            this.textBox1.Location = new System.Drawing.Point(520, 252);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(280, 22);
-            this.textBox1.TabIndex = 5;
+            this.txtRoomCodeInput.Location = new System.Drawing.Point(520, 252);
+            this.txtRoomCodeInput.Name = "txtRoomCodeInput";
+            this.txtRoomCodeInput.Size = new System.Drawing.Size(280, 22);
+            this.txtRoomCodeInput.TabIndex = 5;
             // 
             // btnCreateRoom
             // 
@@ -90,6 +90,7 @@
             this.btnCreateRoom.TabIndex = 6;
             this.btnCreateRoom.Text = "Create room";
             this.btnCreateRoom.UseVisualStyleBackColor = true;
+            this.btnCreateRoom.Click += new System.EventHandler(this.btnCreateRoom_Click);
             // 
             // label3
             // 
@@ -108,7 +109,7 @@
             this.ClientSize = new System.Drawing.Size(1306, 677);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.btnCreateRoom);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.txtRoomCodeInput);
             this.Controls.Add(this.btnJoinRoomByCode);
             this.Controls.Add(this.btnJoinRoomRandom);
             this.Controls.Add(this.label2);
@@ -126,7 +127,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnJoinRoomRandom;
         private System.Windows.Forms.Button btnJoinRoomByCode;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txtRoomCodeInput;
         private System.Windows.Forms.Button btnCreateRoom;
         private System.Windows.Forms.Label label3;
     }
