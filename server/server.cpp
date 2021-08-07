@@ -601,11 +601,13 @@ void startGame(LP_Session session, string &log) {
 
 // get quiz
 void getQuiz(LP_Session session, string &log) {
+	LP_Player player = session->player;
 	string rs;
 	SQLHANDLE sqlStmtHandle;
 	LP_Question quiz;
 	sqlStmtHandle = NULL;
 	int quizID = 2;
+	int roomIndex;
 	string query = "SELECT * FROM quiz WHERE id=" + to_string(quizID);
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
@@ -613,6 +615,10 @@ void getQuiz(LP_Session session, string &log) {
 	EnterCriticalSection(&criticalSection);
 	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
 	quiz = rooms[session->player->roomLoc]->quiz;
+	LeaveCriticalSection(&criticalSection);
+
+	EnterCriticalSection(&criticalSection);
+	roomIndex = player->roomLoc;
 	LeaveCriticalSection(&criticalSection);
 
 	int fetch = SQLFetch(sqlStmtHandle);
@@ -626,6 +632,25 @@ void getQuiz(LP_Session session, string &log) {
 			rs = "290 " + rs;
 			cout << quiz->question << endl;
 			cout << quiz->correct_answer << endl;
+
+			char buff[DATA_BUFSIZE];
+			strcpy(buff, rs.c_str());
+
+			EnterCriticalSection(&criticalSection);
+			rooms[roomIndex]->numberAnswer = 0;
+			cout << "check outside" << endl;
+			cout << "room Master " << rooms[roomIndex]->roomMaster << " " << rooms[roomIndex]->roomMaster->userID << endl;
+			for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+				cout << rooms[roomIndex]->players[i] << endl;
+				if (rooms[roomIndex]->players[i]) {
+					cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
+					if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
+						cout << "check" << endl;
+						sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+					}
+				}
+			}
+			LeaveCriticalSection(&criticalSection);
 		}
 		else {
 			rs = "490 quiz does not exists!";
