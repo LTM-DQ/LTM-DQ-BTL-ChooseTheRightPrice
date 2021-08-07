@@ -30,7 +30,10 @@
         {
             this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
-            this.panel1 = new System.Windows.Forms.Panel();
+            this.pnlPlaying = new System.Windows.Forms.Panel();
+            this.pnlStartGame = new System.Windows.Forms.Panel();
+            this.label5 = new System.Windows.Forms.Label();
+            this.btnStartGame = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
             this.txtAnswer = new System.Windows.Forms.TextBox();
@@ -47,7 +50,8 @@
             this.picBoxUser1 = new System.Windows.Forms.PictureBox();
             this.picBoxUser2 = new System.Windows.Forms.PictureBox();
             this.lblRoomCode = new System.Windows.Forms.Label();
-            this.panel1.SuspendLayout();
+            this.pnlPlaying.SuspendLayout();
+            this.pnlStartGame.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser4)).BeginInit();
@@ -74,18 +78,51 @@
             this.label1.TabIndex = 1;
             this.label1.Text = "RoomCode";
             // 
-            // panel1
+            // pnlPlaying
             // 
-            this.panel1.Controls.Add(this.label4);
-            this.panel1.Controls.Add(this.button2);
-            this.panel1.Controls.Add(this.txtAnswer);
-            this.panel1.Controls.Add(this.pictureBox1);
-            this.panel1.Controls.Add(this.label3);
-            this.panel1.Controls.Add(this.label2);
-            this.panel1.Location = new System.Drawing.Point(26, 80);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1278, 409);
-            this.panel1.TabIndex = 3;
+            this.pnlPlaying.Controls.Add(this.pnlStartGame);
+            this.pnlPlaying.Controls.Add(this.label4);
+            this.pnlPlaying.Controls.Add(this.button2);
+            this.pnlPlaying.Controls.Add(this.txtAnswer);
+            this.pnlPlaying.Controls.Add(this.pictureBox1);
+            this.pnlPlaying.Controls.Add(this.label3);
+            this.pnlPlaying.Controls.Add(this.label2);
+            this.pnlPlaying.Location = new System.Drawing.Point(26, 80);
+            this.pnlPlaying.Name = "pnlPlaying";
+            this.pnlPlaying.Size = new System.Drawing.Size(1278, 409);
+            this.pnlPlaying.TabIndex = 3;
+            // 
+            // pnlStartGame
+            // 
+            this.pnlStartGame.Controls.Add(this.label5);
+            this.pnlStartGame.Controls.Add(this.btnStartGame);
+            this.pnlStartGame.Location = new System.Drawing.Point(0, 0);
+            this.pnlStartGame.Name = "pnlStartGame";
+            this.pnlStartGame.Size = new System.Drawing.Size(1278, 406);
+            this.pnlStartGame.TabIndex = 10;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Font = new System.Drawing.Font("Times New Roman", 22.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.Location = new System.Drawing.Point(466, 27);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(268, 43);
+            this.label5.TabIndex = 1;
+            this.label5.Text = "What\'s up bros";
+            // 
+            // btnStartGame
+            // 
+            this.btnStartGame.BackColor = System.Drawing.Color.ForestGreen;
+            this.btnStartGame.Font = new System.Drawing.Font("Times New Roman", 16.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnStartGame.ForeColor = System.Drawing.Color.White;
+            this.btnStartGame.Location = new System.Drawing.Point(481, 161);
+            this.btnStartGame.Name = "btnStartGame";
+            this.btnStartGame.Size = new System.Drawing.Size(235, 79);
+            this.btnStartGame.TabIndex = 0;
+            this.btnStartGame.Text = "Start game";
+            this.btnStartGame.UseVisualStyleBackColor = false;
+            this.btnStartGame.Click += new System.EventHandler(this.btnStartGame_Click);
             // 
             // label4
             // 
@@ -246,14 +283,16 @@
             this.ClientSize = new System.Drawing.Size(1338, 751);
             this.Controls.Add(this.lblRoomCode);
             this.Controls.Add(this.panel2);
-            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.pnlPlaying);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.button1);
             this.Name = "PlayForm";
             this.Text = "PlayForm";
             this.Load += new System.EventHandler(this.PlayForm_Load);
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
+            this.pnlPlaying.ResumeLayout(false);
+            this.pnlPlaying.PerformLayout();
+            this.pnlStartGame.ResumeLayout(false);
+            this.pnlStartGame.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
@@ -270,7 +309,7 @@
 
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel pnlPlaying;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
@@ -287,5 +326,8 @@
         private System.Windows.Forms.PictureBox picBoxUser2;
         private System.Windows.Forms.PictureBox picBoxUser1;
         private System.Windows.Forms.Label lblRoomCode;
+        private System.Windows.Forms.Panel pnlStartGame;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button btnStartGame;
     }
 }

@@ -39,5 +39,13 @@ namespace Client3
         {
 
         }
+
+        private void btnStartGame_Click(object sender, EventArgs e)
+        {
+            pnlStartGame.Visible = false;
+            
+            //Send message start game to server
+
+        }
     }
 }

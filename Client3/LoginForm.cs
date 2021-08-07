@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Client3.Properties;
 
 namespace Client3
 {
@@ -24,7 +25,7 @@ namespace Client3
             InitializeComponent();
             instance = this;
             ConnectServer();
-            Thread listen = new Thread(()=> Globals.ReceiveMessage(client));
+            Thread listen = new Thread(() => Globals.ReceiveMessage(client));
             listen.IsBackground = true;
             listen.Start();
             txt1 = txtPasswordLogin;
@@ -34,7 +35,7 @@ namespace Client3
         {
             string username = txtUsernameLogin.Text;
             string password = txtPasswordLogin.Text;
-            if(username != "" && password != "")
+            if (username != "" && password != "")
             {
                 string loginMessage = "SIGNIN " + username + "\n" + password + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(loginMessage);
@@ -44,10 +45,10 @@ namespace Client3
             {
                 MessageBox.Show("Username or password isn't correct.");
             }
-            
+
         }
 
-        
+
         /// <summary>
         /// Kết nối tới server
         /// </summary>
@@ -58,13 +59,13 @@ namespace Client3
                 IP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5500);
                 client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 client.Connect(IP);
-               
+
             }
             catch (Exception)
             {
                 MessageBox.Show("Connect fail !");
             }
-            
+
         }
 
         /// <summary>
@@ -75,11 +76,11 @@ namespace Client3
             client.Close();
         }
 
-        
-        
+
+
         private void handleMessage(String opcode, String payload)
         {
-            
+
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -102,7 +103,7 @@ namespace Client3
 
         private void btnShowPass_Click(object sender, EventArgs e)
         {
-            if(txtPasswordLogin.PasswordChar == '*')
+            if (txtPasswordLogin.PasswordChar == '*')
             {
                 btnHidePass.BringToFront();
                 txtPasswordLogin.PasswordChar = '\0';
@@ -112,117 +113,4 @@ namespace Client3
     }
 }
 
-public static class Globals
-{
-    public const String DELIMITER = "\r\n";
-    /// <summary>
-    /// send message to server
-    /// </summary>
-    /// <param name="msg">byte array to send</param> 
-    /// <returns>int: 0 if send success, errorCode if fail</returns>
-    public static int SendMessage(Socket client, byte[] msg)
-    {
-        try
-        {
-            int byteCount = client.Send(msg, 0, msg.Length, SocketFlags.None);
-            Console.WriteLine("Sent {0} bytes.", byteCount);
-        }
-        catch (SocketException e)
-        {
-            Console.WriteLine("{0} Error code: {1}.", e.Message, e.ErrorCode);
-            return (e.ErrorCode);
-        }
-        return 0;
-    }
 
-
-    /// <summary>
-    /// receive message from server
-    /// </summary>
-    public static void ReceiveMessage(Socket client)
-    {
-        try
-        {
-
-            while (true)
-            {
-                byte[] messageRcv = new byte[256];
-                // Get reply from the server.
-                int byteRcv = client.Receive(messageRcv, 0, client.Available,
-                                           SocketFlags.None);
-                if (byteRcv > 0)
-                {
-                    messageRcv[byteRcv] = 0;
-                    string dataReceive = Encoding.UTF8.GetString(messageRcv);
-                    Console.WriteLine(dataReceive);
-                    string opcode = dataReceive.Substring(0, 3);
-                    string payload = dataReceive.Substring(4);
-                    Console.WriteLine(opcode);
-                    Console.WriteLine(payload);
-                    handleMessage(opcode, payload);
-                }
-            }
-
-        }
-        catch (Exception)
-        {
-            Console.WriteLine("Cannot receive message.");
-        }
-
-    }
-
-    public static void handleMessage(String opcode, String payload)
-    {
-        switch (opcode)
-        {
-            case "210":
-                //open main form
-                Client3.LoginForm.instance.Invoke((MethodInvoker)delegate
-                {
-                    // close the form on the forms thread
-                    Client3.LoginForm.instance.Hide();
-                    var mainform1 = new Client3.MainForm();
-                    mainform1.Closed += (s, args) => Client3.LoginForm.instance.Close();
-                    mainform1.Show();
-                });
-                break;
-            case "410":
-                //Username or password is incorrect
-                MessageBox.Show(payload);
-                break;
-            case "411":
-                //Username or password is incorrect
-                MessageBox.Show(payload);
-                break;
-            case "230":
-                string[] payloadData = payload.Split('\n');
-                string roomCode = payloadData[0];
-                string username = payloadData[2];
-                var labelRoomCode = Client3.PlayForm.instance.labelRoomCode;
-                Console.WriteLine(labelRoomCode);
-                labelRoomCode.Invoke((MethodInvoker)delegate {
-                    labelRoomCode.Text = roomCode;
-                });
-                var labelUsers = Client3.PlayForm.instance.labelUsers;
-                var labelUser1 = labelUsers[0];
-                int lengthUser = Client3.PlayForm.instance.labelUsers.Length;
-                for(int i=0; i < lengthUser; i++)
-                {
-                    labelUser1 = labelUsers[i];
-                }
-                labelUser1.Invoke((MethodInvoker)delegate
-                {
-                    labelUser1.Text = username;
-                });
-                var pictureBoxUser1 = Client3.PlayForm.instance.pictureBoxUser1;
-                pictureBoxUser1.BackgroundImage = Client3.Properties.Resources.user;
-                pictureBoxUser1.BackgroundImageLayout = ImageLayout.Stretch;
-
-                break;
-
-            default:
-                Console.WriteLine("test");
-                break;
-        }
-    }
-}
