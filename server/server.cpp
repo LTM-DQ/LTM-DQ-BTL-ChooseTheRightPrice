@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 	//		cout << str1.length() << " " << str2.length() << endl;
 	//	}
 	//}
-	
+
 	InitializeCriticalSection(&criticalSection);
 	while (1) {
 		sockaddr_in clientAddr;
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 		flags = 0;
 		inet_ntop(AF_INET, &clientAddr.sin_addr, session->clientIP, sizeof(session->clientIP));
 		session->clientPort = ntohs(clientAddr.sin_port);
-		session->isLogin = false; 
+		session->isLogin = false;
 		session->sessionID = gen_random(6);
 
 		if (WSARecv(acceptSock, &(perIoData->dataBuff), 1, &transferredBytes, &flags, &(perIoData->overlapped), NULL) == SOCKET_ERROR) {
@@ -283,7 +283,7 @@ unsigned __stdcall serverWorkerThread(LPVOID completionPortID)
 	LP_Session session;
 	LP_PER_IO_DATA perIoData;
 	DWORD flags;
-	
+
 	char queue[DATA_BUFSIZE];
 
 	while (TRUE) {
@@ -583,7 +583,7 @@ void startGame(LP_Session session, string &log) {
 		EnterCriticalSection(&criticalSection);
 		rooms[roomIndex]->numberAnswer = 0;
 		cout << "check outside" << endl;
-		cout << "room Master " << rooms[roomIndex]->roomMaster<< " " << rooms[roomIndex]->roomMaster-> userID << endl;
+		cout << "room Master " << rooms[roomIndex]->roomMaster << " " << rooms[roomIndex]->roomMaster->userID << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
@@ -687,7 +687,7 @@ void createRoom(LP_Session session, string &log) {
 		player->roomID = rooms[i]->roomID;
 		player->position = 0;
 		string buff = "230 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer) + "\n" + player->username;
-		
+
 		strcpy(session->buffer, buff.c_str());
 		log += "230";
 	}
@@ -703,16 +703,16 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 	LP_Player player = session->player;
 	if (roomID.length() == 0) {
 		cout << "go into room at random" << endl;
-	//go into the room at random
+		//go into the room at random
 		if (numberOfRooms == 0) {
 			LeaveCriticalSection(&criticalSection);
 			createRoom(session, log);
 		}
 		else {
 			for (int j = 0; j < numberOfRooms; ++j) { //find in rooms which has at least 1 player
-				if (rooms[j]->numberOfPlayer < MAX_PLAYER_IN_ROOM && rooms[j]->is_started == false) { 
+				if (rooms[j]->numberOfPlayer < MAX_PLAYER_IN_ROOM && rooms[j]->is_started == false) {
 					//Join room successfully
-					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) { 
+					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 						if (rooms[j]->players[i]->roomID.length() == 0) {
 							cout << "roomID length " << rooms[i]->players[j] << endl;
 							rooms[j]->players[i] = player;
@@ -749,7 +749,7 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 	}
 	else {
 		cout << "go into room by id " << roomID << endl;
-	//go into the room by id
+		//go into the room by id
 		for (int i = 0; i < MAX_ROOM; ++i) {
 			cout << "room i : " << rooms[i]->roomID << endl;
 			if (rooms[i]->roomID.length() == 0) {
@@ -758,7 +758,7 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				writeInLogFile(log);
 				LeaveCriticalSection(&criticalSection);
 				return;
-				}
+			}
 			if (rooms[i]->roomID == roomID) {
 
 				if (rooms[i]->numberOfPlayer == MAX_PLAYER_IN_ROOM) {
@@ -779,7 +779,6 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
 					cout << "roomID length " << rooms[i]->players[j] << endl;
 					if (!rooms[i]->players[j]) {
-						cout << "test1 " << endl;
 						rooms[i]->players[j] = player;
 						player->position = j;
 						break;
@@ -794,19 +793,34 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 				rooms[i]->numberOfPlayer++;
 				string buff = "240 " + rooms[i]->roomID + "\n" + to_string(rooms[i]->numberOfPlayer);
 				strcpy(session->buffer, buff.c_str());
+
+				//send to another players in room
+				for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
+					cout << rooms[i]->players[j] << endl;
+					if (rooms[i]->players[j]) {
+						cout << "test rooms " << rooms[i]->players[j]->userID << endl;
+						if (rooms[i]->players[j]->userID != rooms[i]->roomMaster->userID) {
+							cout << "check" << endl;
+							string sendData = "240 " + rooms[i]->roomID + "\n" + rooms[i]->players[j]->username + "\n"+ to_string(rooms[i]->numberOfPlayer);
+							char buff[DATA_BUFSIZE];
+							strcpy(buff, sendData.c_str());
+							sendMessage(buff, rooms[i]->players[j]->socket);
+						}
+					}
+				}
 				log += "240";
 				writeInLogFile(log);
 				LeaveCriticalSection(&criticalSection);
 				return;
 			}
-			}
+		}
 		strcpy(session->buffer, "440 Room doesn't exist.");
 		log += "440";
 		writeInLogFile(log);
 		LeaveCriticalSection(&criticalSection);
-		}
-		
 	}
+
+}
 
 //TODO: fix that
 void exitRoom(LP_Session session, string &log) {
@@ -846,7 +860,7 @@ void exitRoom(LP_Session session, string &log) {
 		writeInLogFile(log);
 		LeaveCriticalSection(&criticalSection);
 	}
-	
+
 }
 
 // Register user
@@ -900,7 +914,7 @@ void signIn(LP_Session session, string &log, string data) {
 	SQLHANDLE sqlStmtHandle;
 	sqlStmtHandle = NULL;
 	string strUsername = data.substr(0, data.find("\n"));
-	string strPassword = data.substr(data.find("\n")+1);
+	string strPassword = data.substr(data.find("\n") + 1);
 	string query = "SELECT * FROM account WHERE username='" + strUsername + "' AND password='" + strPassword + "'";
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
@@ -942,7 +956,7 @@ void signIn(LP_Session session, string &log, string data) {
 		}
 	}
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
-	
+
 	writeInLogFile(log);
 }
 
@@ -967,7 +981,7 @@ void logOut(LP_Session session, string &log) {
 
 
 void updateLoginStatus(string username, string isLogin) {
-	string query = "UPDATE account SET islogin = '"+ isLogin+ "' WHERE username='" + username + "'";
+	string query = "UPDATE account SET islogin = '" + isLogin + "' WHERE username='" + username + "'";
 	cout << query << endl;
 	PWSTR lquery1 = convertStringToLPWSTR(query);
 	SQLHANDLE sqlStmtHandle1;
