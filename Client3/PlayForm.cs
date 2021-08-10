@@ -15,14 +15,24 @@ namespace Client3
         public static PlayForm instance;
         public Label labelRoomCode;
         public Label[] labelUsers = new Label[4];
-        public PictureBox pictureBoxUser1;
+        public PictureBox[] pictureBoxUsers = new PictureBox[4];
         public PlayForm()
         {
             InitializeComponent();
             instance = this;
             labelRoomCode = lblRoomCode;
+
             labelUsers[0] = lblUser1;
-            pictureBoxUser1 = picBoxUser1;
+            pictureBoxUsers[0] = picBoxUser1;
+
+            labelUsers[1] = lblUser2;
+            pictureBoxUsers[1] = picBoxUser2;
+
+            labelUsers[2] = lblUser3;
+            pictureBoxUsers[2] = picBoxUser3;
+
+            labelUsers[3] = lblUser4;
+            pictureBoxUsers[3] = picBoxUser4;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)

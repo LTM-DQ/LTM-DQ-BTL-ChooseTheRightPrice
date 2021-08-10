@@ -118,13 +118,14 @@ namespace Client3
                     {
                         labelUser1.Text = username;
                     });
-                    var pictureBoxUser1 = Client3.PlayForm.instance.pictureBoxUser1;
-                    pictureBoxUser1.BackgroundImage = Resources.user;
-                    pictureBoxUser1.BackgroundImageLayout = ImageLayout.Stretch;
+                    var pictureBoxUsers = Client3.PlayForm.instance.pictureBoxUsers;
+                    pictureBoxUsers[0].BackgroundImage = Resources.user;
+                    pictureBoxUsers[0].BackgroundImageLayout = ImageLayout.Stretch;
 
                     break;
                 case "240":
-                    MessageBox.Show("Ok join room sucessful");
+                    Console.WriteLine("Ok join room sucessful");
+                    Console.WriteLine(payload);
                     break;
 
                 default:
