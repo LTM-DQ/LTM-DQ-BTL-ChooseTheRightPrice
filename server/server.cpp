@@ -575,21 +575,17 @@ void startGame(LP_Session session, string &log) {
 		strcpy(session->buffer, "451 player is not room master");
 	}
 	else {
-		getQuiz(session, log);
 		log += "250";
 		strcpy(session->buffer, "250 start game");
 		char buff[DATA_BUFSIZE];
 		strcpy(buff, "250 start game");
 		EnterCriticalSection(&criticalSection);
 		rooms[roomIndex]->numberAnswer = 0;
-		cout << "check outside" << endl;
-		cout << "room Master " << rooms[roomIndex]->roomMaster << " " << rooms[roomIndex]->roomMaster->userID << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
 				cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
 				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
-					cout << "check" << endl;
 					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
 				}
 			}

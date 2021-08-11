@@ -127,7 +127,19 @@ namespace Client3
                     Console.WriteLine("Ok join room sucessful");
                     Console.WriteLine(payload);
                     break;
-
+                case "250":
+                    MessageBox.Show(payload);
+                    break;
+                case "290":
+                    var labelQuestion = Client3.PlayForm.instance.labelQues;
+                    var countDownTime = Client3.PlayForm.instance.countDownTime;
+                    labelQuestion.Invoke((MethodInvoker)delegate
+                    {
+                        labelQuestion.Text = payload;
+                        countDownTime.Enabled = true;
+                    });
+                    countDownTime.Enabled = true;
+                    break;
                 default:
                     Console.WriteLine("test");
                     break;
