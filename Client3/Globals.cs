@@ -93,41 +93,124 @@ namespace Client3
                     MessageBox.Show(payload);
                     break;
                 case "230":
-                    string[] payloadData = payload.Split('\n');
-                    string roomCode = payloadData[0];
-                    string username = payloadData[2];
-                    var labelRoomCode = Client3.PlayForm.instance.labelRoomCode;
-                    Console.WriteLine(labelRoomCode);
-                    labelRoomCode.Invoke((MethodInvoker)delegate
+                    MainForm.instance.Invoke((MethodInvoker)delegate
                     {
-                        labelRoomCode.Text = roomCode;
-                    });
-                    var labelUsers = Client3.PlayForm.instance.labelUsers;
-                    var labelUser1 = labelUsers[0];
-                    //int lengthUser = Client3.PlayForm.instance.labelUsers.Length;
-                    //for (int i = 0; i < lengthUser; i++)
-                    //{
-                    //    if(labelUsers[i] == null)
-                    //    {
-                    //        MessageBox.Show("this null " + i);
-                    //        break;
-                    //    }
+                        // close the form on the forms thread
+                        MainForm.instance.Hide();
+                        var playform1 = new PlayForm();
+                        playform1.Closed += (s, args) => MainForm.instance.Close();
+                        playform1.Show();
+                        string[] payloadData = payload.Split('\n');
+                        string roomCode = payloadData[0];
+                        string username = payloadData[2];
+                        var labelRoomCode = playform1.labelRoomCode;
+                        labelRoomCode.Invoke((MethodInvoker)delegate
+                        {
+                            labelRoomCode.Text = roomCode;
+                        });
+                        var labelUsers = playform1.labelUsers;
+                        var labelUser1 = labelUsers[0];
+                        labelUser1.Invoke((MethodInvoker)delegate
+                        {
+                            labelUser1.Text = username;
+                        });
+                        var pictureBoxUsers = playform1.pictureBoxUsers;
+                        pictureBoxUsers[0].BackgroundImage = Resources.user;
+                        pictureBoxUsers[0].BackgroundImageLayout = ImageLayout.Stretch;
 
-                    //}
-                    labelUser1.Invoke((MethodInvoker)delegate
-                    {
-                        labelUser1.Text = username;
                     });
-                    var pictureBoxUsers = Client3.PlayForm.instance.pictureBoxUsers;
-                    pictureBoxUsers[0].BackgroundImage = Resources.user;
-                    pictureBoxUsers[0].BackgroundImageLayout = ImageLayout.Stretch;
-
                     break;
+               
                 case "240":
-                    Console.WriteLine("Ok join room sucessful");
-                    Console.WriteLine(payload);
-                    break;
+                    //Go into room by Id
+                    string[] payloadData1 = payload.Split('\n');
+                    string roomId = payloadData1[0];
+                    string[] usernames = payloadData1[1].Split('*');
+                    //Update UI
+                    MainForm.instance.Invoke((MethodInvoker)delegate
+                    {
+                        // close the form on the forms thread
+                        MainForm.instance.Hide();
+                        var playform1 = new PlayForm();
+                     
+                       
+                        playform1.Closed += (s, args) => MainForm.instance.Close();
+                        playform1.Show();
+                        
+                        var labelUsers1 = playform1.labelUsers;
+                        var pictureBoxUsers1 = Client3.PlayForm.instance.pictureBoxUsers;
+                        for (int i = 0; i < usernames.Length; i++)
+                        {
+                            labelUsers1[i].Invoke((MethodInvoker)delegate
+                            {
+                                labelUsers1[i].Text = usernames[i];
+                            });
+                            pictureBoxUsers1[i].BackgroundImage = Resources.user;
+                            pictureBoxUsers1[i].BackgroundImageLayout = ImageLayout.Stretch;
+                        }
+                        playform1.labelRoomCode.Invoke((MethodInvoker)delegate
+                        {
+                            playform1.labelRoomCode.Text = roomId;
+                        });
 
+                        playform1.buttonStartGame.Visible = false;
+                    });
+                    
+                    break;
+                    
+                    //Open play form
+
+                case "241":
+                    //Listen new player go into room
+                    string[] usernames2 = payload.Split('*');
+
+                    //Update UI
+                    var labelUsers2 = PlayForm.instance.labelUsers;
+                    var pictureBoxUsers2 = PlayForm.instance.pictureBoxUsers;
+                    for (int i = 0; i < usernames2.Length; i++)
+                    {
+                        labelUsers2[i].Invoke((MethodInvoker)delegate
+                        {
+                            labelUsers2[i].Text = usernames2[i];
+                        });
+                        pictureBoxUsers2[i].BackgroundImage = Resources.user;
+                        pictureBoxUsers2[i].BackgroundImageLayout = ImageLayout.Stretch;
+                    }
+
+
+                    break;
+                case "280":
+                    PlayForm.instance.Invoke((MethodInvoker)delegate
+                    {
+                        PlayForm.instance.Hide();
+                        MainForm.instance.Show();
+                    });
+                    var position = payload;
+                    Console.WriteLine(position);
+                    break;
+                case "281":
+                    string[] payloadData281 = payload.Split('\n');
+                    int position281 = int.Parse(payloadData281[0]);
+                    int isNewMaster = int.Parse(payloadData281[1]);
+                    var labelUsers281 = PlayForm.instance.labelUsers;
+                    var labelUser281 = labelUsers281[position281];
+                    var buttonStart281 = PlayForm.instance.buttonStartGame;
+                    labelUser281.Invoke((MethodInvoker)delegate
+                    {
+                        labelUser281.Text = null;
+                    });
+                    
+                    var pictureBoxUsers281 = PlayForm.instance.pictureBoxUsers;
+                    pictureBoxUsers281[position281].BackgroundImage = null;
+
+                    if(isNewMaster == 1)
+                    {
+                        buttonStart281.Invoke((MethodInvoker)delegate
+                        {
+                            buttonStart281.Visible = true;
+                        });
+                    }
+                    break;
                 default:
                     Console.WriteLine("test");
                     break;
