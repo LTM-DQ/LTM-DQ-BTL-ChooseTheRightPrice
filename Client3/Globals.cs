@@ -89,7 +89,7 @@ namespace Client3
                     MessageBox.Show(payload);
                     break;
                 case "411":
-                    //Username or password is incorrect
+                    //Logged in from a different locatione
                     MessageBox.Show(payload);
                     break;
                 case "230":
@@ -188,6 +188,7 @@ namespace Client3
                     var position = payload;
                     Console.WriteLine(position);
                     break;
+
                 case "281":
                     string[] payloadData281 = payload.Split('\n');
                     int position281 = int.Parse(payloadData281[0]);
@@ -211,8 +212,24 @@ namespace Client3
                         });
                     }
                     break;
+
+                case "250":
+                    MessageBox.Show(payload);
+                    break;
+                case "290":
+                    var labelQuestion = Client3.PlayForm.instance.labelQues;
+                    var countDownTime = Client3.PlayForm.instance.countDownTime;
+                    labelQuestion.Invoke((MethodInvoker)delegate
+                    {
+                        labelQuestion.Text = payload;
+                        countDownTime.Enabled = true;
+                    });
+                    countDownTime.Enabled = true;
+                    break;
+                case "451":
+                    MessageBox.Show(payload);
+                    break;
                 default:
-                    Console.WriteLine("test");
                     break;
             }
         }

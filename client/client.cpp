@@ -149,34 +149,6 @@ void signup() {
 	string key = recvData.substr(0, 3);
 }
 
-// Post Message function
-void postMessage() {
-	while (1)
-	{
-		// Check login
-		memset(buff, 0, BUFF_SIZE);
-		memset(buffIn, 0, BUFF_SIZE);
-		// Enter String
-		cout << "To back to menu, please press enter!" << endl;
-		cout << "Enter message!\n\n";
-		cout << "POST: ";
-		gets_s(buffIn, BUFF_SIZE);
-
-		if (strlen(buffIn) == 0) break;
-		strcat_s(buff, "POST ");
-		strcat_s(buff, buffIn);
-		strcat_s(buff, DELIMITER);
-
-		// Send message
-		sendMessage(buff, strlen(buff));
-		// Receive message
-		recvMessage(buff);
-		string recvData = buff;
-		string key = recvData.substr(0, 3);
-		if (key != "200") break;
-	}
-}
-
 // Log out function
 void logOut() {
 	memset(buff, 0, BUFF_SIZE);
@@ -262,12 +234,34 @@ void getQuiz() {
 	recvMessage(buff);
 }
 
+void answerQuestion() {
+	// Check login
+	memset(buff, 0, BUFF_SIZE);
+	memset(buffIn, 0, BUFF_SIZE);
+	// Enter String
+	cout << "To back to menu, please press enter!" << endl;
+	cout << "Enter message!\n\n";
+	cout << "ANSWER: ";
+	gets_s(buffIn, BUFF_SIZE);
+
+	if (strlen(buffIn) == 0) return;
+	strcat_s(buff, "ANSWER ");
+	strcat_s(buff, buffIn);
+	strcat_s(buff, DELIMITER);
+
+	// Send message
+	sendMessage(buff, strlen(buff));
+	// Receive message
+	recvMessage(buff);
+}
+
 // Menu function
 void menu() {
 	while (1) {
 		// display menu
 		printf("1. Sign in\n2. Sign up\n3. Logout\n4. Create Room\n5.Go into the room by roomcode\n");
-		printf("6.Go into the room at random\n7.Leave the room\n8. get quiz\n9. Start game\n10. Exit\n");
+		printf("6.Go into the room at random\n7.Leave the room\n8. get quiz\n9. Start game\n10. Enter answer\n");
+		printf("11. Exit\n");
 		printf("Choose a function: ");
 		char choose[BUFF_SIZE];
 		// choose a function
@@ -301,6 +295,9 @@ void menu() {
 			startGame();
 			break;
 		case 10:
+			answerQuestion();
+			break;
+		case 11:
 			closesocket(clientSock);
 			WSACleanup();
 			exit(1);
