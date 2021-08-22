@@ -61,6 +61,11 @@ namespace Client3
 
         }
 
+        private void PlayForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            
+        }
+
         private void panel2_Paint(object sender, PaintEventArgs e)
         {
 
