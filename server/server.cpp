@@ -422,7 +422,7 @@ void handleProtocol(LP_Session session, string &log) {
 	// Write message to log variable
 	log += str + " $ ";
 	string key = str.substr(0, 6);
-	string data;
+	string data = "";
 	if (str.length() > 6) {
 		data = str.substr(7);
 	}
@@ -553,11 +553,59 @@ void getResult(LP_Session session, string &log) {
 void handleAnswer(LP_Session session, string &log, string data) {
 	LP_Player player = session->player;
 	session->player->answer = data;
+	char buff[DATA_BUFSIZE];
+	memset(buff, 0, DATA_BUFSIZE);
+	string rs;
+	int bestAnswer = INT_MAX;
+	int playerAnswerCorrect, correctAnswer, roomIndex;
+	strcat(buff, "260 ");
 	EnterCriticalSection(&criticalSection);
-	rooms[session->player->roomLoc]->numberAnswer++;
+	roomIndex = session->player->roomLoc;
+	cout << "player " << rooms[roomIndex]->numberOfPlayer << endl;
+	cout <<"answer " << rooms[roomIndex]->numberAnswer << endl;
+	rooms[roomIndex]->numberAnswer++;
+	if (rooms[roomIndex]->numberAnswer == rooms[roomIndex]->numberOfPlayer) {
+		correctAnswer = atoi(rooms[roomIndex]->quiz->correct_answer);
+		cout << correctAnswer << endl;
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			cout << rooms[roomIndex]->players[i] << endl;
+			if (rooms[roomIndex]->players[i]) {
+				cout << "check answer" << endl;
+				if (rooms[roomIndex]->players[i]->answer != "") {
+					int distance = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
+					if (distance < bestAnswer) {
+						bestAnswer = distance;
+						playerAnswerCorrect = i;
+					}
+				}
+			}
+		}
+		rooms[roomIndex]->players[playerAnswerCorrect]->score += 10;
+		
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			if (rooms[roomIndex]->players[i]) {
+				rs = rooms[roomIndex]->players[i]->username;
+				rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
+				strcat(buff, rs.c_str());
+			}
+			else {
+				strcat(buff, "\n");
+			}
+		}
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			cout << rooms[roomIndex]->players[i] << endl;
+			if (rooms[roomIndex]->players[i]) {
+				cout << "check1" << endl;
+				if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
+					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+				}
+			}
+		}
+	}
+	cout << "check2" << endl;
 	LeaveCriticalSection(&criticalSection);
-	string rs = "200 " + data;
-	strcpy(session->buffer, rs.c_str());
+	cout << buff << endl;
+	strcpy(session->buffer, buff);
 	writeInLogFile(log);
 }
 
@@ -568,6 +616,11 @@ void startGame(LP_Session session, string &log) {
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
 	bool checkMaster = rooms[roomIndex]->roomMaster->userID != player->userID;
+	rooms[roomIndex]->numberAnswer = 0;
+	for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+		if (rooms[roomIndex]->players[i])
+			rooms[roomIndex]->players[i]->score = 0;
+	}
 	LeaveCriticalSection(&criticalSection);
 	if (checkMaster) {
 		// if player is not room master

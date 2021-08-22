@@ -18,6 +18,7 @@ namespace Client3
         public Label labelQues;
         public Timer countDownTime;
         public Label[] labelUsers = new Label[4];
+        public Label[] labelAnswers = new Label[4];
         public PictureBox[] pictureBoxUsers = new PictureBox[4];
         Socket client;
         public int i;
@@ -33,15 +34,19 @@ namespace Client3
 
             labelUsers[0] = lblUser1;
             pictureBoxUsers[0] = picBoxUser1;
+            labelAnswers[0] = labelAnswer0;
 
             labelUsers[1] = lblUser2;
             pictureBoxUsers[1] = picBoxUser2;
+            labelAnswers[1] = labelAnswer1;
 
             labelUsers[2] = lblUser3;
             pictureBoxUsers[2] = picBoxUser3;
+            labelAnswers[2] = labelAnswer2;
 
             labelUsers[3] = lblUser4;
             pictureBoxUsers[3] = picBoxUser4;
+            labelAnswers[3] = labelAnswer3;
 
             i = 30;
         }
@@ -84,6 +89,27 @@ namespace Client3
                 timer1.Enabled = false;
                 i = 30;
                 lblCountDown.Text = i.ToString();
+                string message = "ANSWER " + Globals.DELIMITER;
+                byte[] msg = Encoding.UTF8.GetBytes(message);
+                Globals.SendMessage(client, msg);
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var answer = txtAnswer.Text;
+            if (answer != "")
+            {
+                i = 30;
+                lblCountDown.Text = i.ToString();
+                //send request to server to join room
+                string answerMessage = "ANSWER " + answer + Globals.DELIMITER;
+                byte[] msg = Encoding.UTF8.GetBytes(answerMessage);
+                Globals.SendMessage(client, msg);
+            }
+            else
+            {
+                MessageBox.Show("Please fill the room code");
             }
         }
     }

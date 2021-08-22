@@ -130,6 +130,25 @@ namespace Client3
                 case "250":
                     MessageBox.Show(payload);
                     break;
+                case "260":
+                    MessageBox.Show(payload);
+                    var labelAnswers = Client3.PlayForm.instance.labelAnswers;
+                    string[] listUser = payload.Split('\n');
+                    for (int i = 0; i < listUser.Length; ++i)
+                    {
+                        if (listUser[i] == "") continue;
+                        string[] listData = listUser[i].Split(' ');
+                        //for (int j = 0; j < listData.Length; ++j)
+                        //{
+                        //    Console.WriteLine(listData[j] + "\n");
+                        //}
+                        var labelAnswerI = labelAnswers[i];
+                        labelAnswerI.Invoke((MethodInvoker)delegate
+                        {
+                            labelAnswerI.Text = listData[1];
+                        });
+                    }
+                    break;
                 case "290":
                     var labelQuestion = Client3.PlayForm.instance.labelQues;
                     var countDownTime = Client3.PlayForm.instance.countDownTime;
