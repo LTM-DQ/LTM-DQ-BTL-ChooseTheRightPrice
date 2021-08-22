@@ -34,9 +34,21 @@ namespace Client3
 
         }
 
+        //join room at random
         private void button1_Click(object sender, EventArgs e)
         {
-
+            try
+            {
+                //send request to server to join room
+                string joinRoomMessage = "GOINTO" + Globals.DELIMITER;
+                byte[] msg = Encoding.UTF8.GetBytes(joinRoomMessage);
+                Globals.SendMessage(client, msg);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            
         }
 
         //join room by Room Code
@@ -63,8 +75,6 @@ namespace Client3
 
         private void btnCreateRoom_Click(object sender, EventArgs e)
         {
-            //hide this form and show PlayForm
-            showPlayForm();
             //send request create room to server
             string createRoomMessage = "CREATE" + Globals.DELIMITER;
             byte[] msg = Encoding.UTF8.GetBytes(createRoomMessage);

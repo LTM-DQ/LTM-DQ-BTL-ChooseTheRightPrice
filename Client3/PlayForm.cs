@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,6 +21,9 @@ namespace Client3
         public Label[] labelUsers = new Label[4];
         public Label[] labelAnswers = new Label[4];
         public PictureBox[] pictureBoxUsers = new PictureBox[4];
+        public Panel panelStartGame;
+        public Panel panelPlaying;
+        public Button buttonStartGame;
         Socket client;
         public int i;
 
@@ -27,6 +31,8 @@ namespace Client3
         {
             InitializeComponent();
             instance = this;
+            client = LoginForm.instance.client;
+
             labelRoomCode = lblRoomCode;
             client = LoginForm.instance.client;
             labelQues = lblQuestion;
@@ -48,12 +54,21 @@ namespace Client3
             pictureBoxUsers[3] = picBoxUser4;
             labelAnswers[3] = labelAnswer3;
 
+            panelStartGame = pnlStartGame;
+            panelPlaying = pnlPlaying;
+
+            buttonStartGame = btnStartGame;
             i = 30;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private void PlayForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            
         }
 
         private void panel2_Paint(object sender, PaintEventArgs e)
@@ -111,6 +126,15 @@ namespace Client3
             {
                 MessageBox.Show("Please fill the room code");
             }
+        }
+
+        //Leave room
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //send request to server to join room
+            string joinRoomMessage = "EXITRM" + Globals.DELIMITER;
+            byte[] msg = Encoding.UTF8.GetBytes(joinRoomMessage);
+            Globals.SendMessage(client, msg);
         }
     }
 }
