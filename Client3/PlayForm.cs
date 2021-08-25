@@ -17,12 +17,13 @@ namespace Client3
         public static PlayForm instance;
         public Label labelRoomCode;
         public Label labelQues;
-        public Timer countDownTime;
+        public Timer countDownTimePlay, countDownTimeWait;
         public Label[] labelUsers = new Label[4];
         public Label[] labelAnswers = new Label[4];
         public PictureBox[] pictureBoxUsers = new PictureBox[4];
         public Panel panelStartGame;
         public Panel panelPlaying;
+        public Panel labelCountDown;
         public Button buttonStartGame;
         Socket client;
         public int i;
@@ -36,7 +37,8 @@ namespace Client3
             labelRoomCode = lblRoomCode;
             client = LoginForm.instance.client;
             labelQues = lblQuestion;
-            countDownTime = timer1;
+            countDownTimePlay = timer1;
+            countDownTimeWait = timer2;
 
             labelUsers[0] = lblUser1;
             pictureBoxUsers[0] = picBoxUser1;
@@ -58,7 +60,7 @@ namespace Client3
             panelPlaying = pnlPlaying;
 
             buttonStartGame = btnStartGame;
-            i = 30;
+            i = 5;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)
@@ -83,15 +85,9 @@ namespace Client3
 
         private void btnStartGame_Click(object sender, EventArgs e)
         {
-            pnlStartGame.Visible = false;
-
             //Send message start game to server
             string message = "STARTT " + Globals.DELIMITER;
             byte[] msg = Encoding.UTF8.GetBytes(message);
-            Globals.SendMessage(client, msg);
-
-            message = "QUIZZZ " + Globals.DELIMITER;
-            msg = Encoding.UTF8.GetBytes(message);
             Globals.SendMessage(client, msg);
         }
 
@@ -101,31 +97,34 @@ namespace Client3
             lblCountDown.Text = i.ToString();
             if (i == 0)
             {
+                var answer = txtAnswer.Text;
                 timer1.Enabled = false;
-                i = 30;
+                i = 5;
                 lblCountDown.Text = i.ToString();
-                string message = "ANSWER " + Globals.DELIMITER;
+                string message = "ANSWER " + answer + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(message);
                 Globals.SendMessage(client, msg);
+                timer2.Enabled = true;
             }
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            var answer = txtAnswer.Text;
-            if (answer != "")
-            {
-                i = 30;
-                lblCountDown.Text = i.ToString();
-                //send request to server to join room
-                string answerMessage = "ANSWER " + answer + Globals.DELIMITER;
-                byte[] msg = Encoding.UTF8.GetBytes(answerMessage);
-                Globals.SendMessage(client, msg);
-            }
-            else
-            {
-                MessageBox.Show("Please fill the room code");
-            }
+            //var answer = txtAnswer.Text;
+            //if (answer != "")
+            //{
+            //    timer1.Enabled = false;
+            //    i = 30;
+            //    lblCountDown.Text = i.ToString();
+            //    //send request to server to join room
+            //    string answerMessage = "ANSWER " + answer + Globals.DELIMITER;
+            //    byte[] msg = Encoding.UTF8.GetBytes(answerMessage);
+            //    Globals.SendMessage(client, msg);
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Please fill the room code");
+            //}
         }
 
         //Leave room
@@ -135,6 +134,22 @@ namespace Client3
             string joinRoomMessage = "EXITRM" + Globals.DELIMITER;
             byte[] msg = Encoding.UTF8.GetBytes(joinRoomMessage);
             Globals.SendMessage(client, msg);
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            i--;
+            lblCountDown.Text = i.ToString();
+            if (i == 0)
+            {
+                timer2.Enabled = false;
+                i = 10;
+                lblCountDown.Text = i.ToString();
+                string message = "QUIZZZ " + Globals.DELIMITER;
+                byte[] msg = Encoding.UTF8.GetBytes(message);
+                Globals.SendMessage(client, msg);
+                timer1.Enabled = true;
+            }
         }
     }
 }

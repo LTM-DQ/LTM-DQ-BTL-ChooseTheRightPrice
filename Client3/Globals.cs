@@ -214,36 +214,48 @@ namespace Client3
                     break;
 
                 case "250":
-                    MessageBox.Show(payload);
+                    var pnlStartGame = Client3.PlayForm.instance.panelStartGame;
+                    var countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
+                    pnlStartGame.Invoke((MethodInvoker)delegate
+                    {
+                        pnlStartGame.Visible = false;
+                        countDownTimeWait.Enabled = true;
+                    });
                     break;
                 case "260":
-                    MessageBox.Show(payload);
-                    var labelAnswers = Client3.PlayForm.instance.labelAnswers;
-                    string[] listUser = payload.Split('\n');
-                    for (int i = 0; i < listUser.Length; ++i)
+                    try
                     {
-                        if (listUser[i] == "") continue;
-                        string[] listData = listUser[i].Split(' ');
-                        //for (int j = 0; j < listData.Length; ++j)
-                        //{
-                        //    Console.WriteLine(listData[j] + "\n");
-                        //}
-                        var labelAnswerI = labelAnswers[i];
-                        labelAnswerI.Invoke((MethodInvoker)delegate
+                        var labelAnswers = Client3.PlayForm.instance.labelAnswers;
+                        string[] listUser = payload.Split('\n');
+                        for (int i = 0; i < 4; ++i)
                         {
-                            labelAnswerI.Text = listData[1];
-                        });
+                            if (listUser[i] == "") continue;
+                            Console.WriteLine(listUser[i]);
+                            string[] listData = listUser[i].Split(' ');
+                            //for (int j = 0; j < listData.Length; ++j)
+                            //{
+                            //    Console.WriteLine(listData[j] + "\n");
+                            //}
+                            var labelAnswerI = labelAnswers[i];
+                            labelAnswerI.Invoke((MethodInvoker)delegate
+                            {
+                                labelAnswerI.Text = listData[1];
+                            });
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Cannot receive message.");
                     }
                     break;
                 case "290":
                     var labelQuestion = Client3.PlayForm.instance.labelQues;
-                    var countDownTime = Client3.PlayForm.instance.countDownTime;
+                    //var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
                     labelQuestion.Invoke((MethodInvoker)delegate
                     {
                         labelQuestion.Text = payload;
-                        countDownTime.Enabled = true;
+                        //countDownTimePlay.Enabled = true;
                     });
-                    countDownTime.Enabled = true;
                     break;
                 case "451":
                     MessageBox.Show(payload);

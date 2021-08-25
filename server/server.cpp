@@ -26,6 +26,7 @@ using namespace std;
 #define BUFF_QUERY 1024
 #define MAX_PLAYER_IN_ROOM 4
 #define MAX_ROOM 256
+#define QUIZ_SIZE 10
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -74,9 +75,11 @@ typedef struct {
 	LP_Player roomMaster;
 	int numberOfPlayer;
 	int numberAnswer;
+	int questionNumber;
+	int numberGetQuestion;
 	LP_Player players[MAX_PLAYER_IN_ROOM];
 	boolean is_started;
-	LP_Question quiz;
+	LP_Question quizzes[QUIZ_SIZE];
 } Room, *LP_Room;
 
 CRITICAL_SECTION criticalSection;
@@ -104,6 +107,7 @@ void exitRoom(LP_Session session, string &log);
 void updateLoginStatus(string username, string isLogin);
 void handleAnswer(LP_Session session, string &log, string data);
 void getResult(LP_Session session, string &log);
+void getQuizDB(LP_Question *quiz);
 
 int main(int argc, char *argv[])
 {
@@ -173,10 +177,6 @@ int main(int argc, char *argv[])
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
 		}
-		if ((rooms[i]->quiz = (LP_Question)GlobalAlloc(GPTR, sizeof(Question))) == NULL) {
-			printf("GlobalAlloc() failed with error %d\n", GetLastError());
-			return 1;
-		}
 		/*if ((rooms[i]->roomMaster = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
 			printf("GlobalAlloc() failed with error %d\n", GetLastError());
 			return 1;
@@ -189,6 +189,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}*/
 			rooms[i]->players[j] = 0;
+		}
+		for (int j = 0; j < QUIZ_SIZE; ++j) {
+			rooms[i]->quizzes[j] = 0;
 		}
 	}
 
@@ -560,19 +563,16 @@ void handleAnswer(LP_Session session, string &log, string data) {
 	string rs;
 	int bestAnswer = INT_MAX;
 	int playerAnswerCorrect, correctAnswer, roomIndex;
-	strcat(buff, "260 ");
 	EnterCriticalSection(&criticalSection);
 	roomIndex = session->player->roomLoc;
-	cout << "player " << rooms[roomIndex]->numberOfPlayer << endl;
-	cout <<"answer " << rooms[roomIndex]->numberAnswer << endl;
 	rooms[roomIndex]->numberAnswer++;
 	if (rooms[roomIndex]->numberAnswer == rooms[roomIndex]->numberOfPlayer) {
-		correctAnswer = atoi(rooms[roomIndex]->quiz->correct_answer);
-		cout << correctAnswer << endl;
+		strcat(buff, "260 ");
+		correctAnswer = atoi(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->correct_answer);
+		cout << "numberAnswer: " << rooms[roomIndex]->numberAnswer << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
-				cout << "check answer" << endl;
 				if (rooms[roomIndex]->players[i]->answer != "") {
 					int distance = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
 					if (distance < bestAnswer) {
@@ -594,19 +594,39 @@ void handleAnswer(LP_Session session, string &log, string data) {
 				strcat(buff, "\n");
 			}
 		}
+		cout << "check1" << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			cout << "check2" << endl;
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
-				cout << "check1" << endl;
 				if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
+					cout << "in"<< buff << endl;
 					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
 				}
 			}
 		}
+		rooms[roomIndex]->numberAnswer = 0;
 	}
-	cout << "check2" << endl;
-	LeaveCriticalSection(&criticalSection);
+	else {
+		strcat(buff, "260 ");
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			if (rooms[roomIndex]->players[i]) {
+				if (rooms[roomIndex]->players[i]->userID == session->player->userID) {
+					rs = rooms[roomIndex]->players[i]->username;
+					rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
+					strcat(buff, rs.c_str());
+				}
+				else {
+					strcat(buff, "\n");
+				}
+			}
+			else {
+				strcat(buff, "\n");
+			}
+		}
+	}
 	cout << buff << endl;
+	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, buff);
 	writeInLogFile(log);
 }
@@ -614,6 +634,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 // start game
 void startGame(LP_Session session, string &log) {
 	LP_Player player = session->player;
+	LP_Question *quizzes;
 	int roomIndex;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
@@ -623,6 +644,9 @@ void startGame(LP_Session session, string &log) {
 		if (rooms[roomIndex]->players[i])
 			rooms[roomIndex]->players[i]->score = 0;
 	}
+	rooms[roomIndex]->questionNumber = 0;
+	rooms[roomIndex]->numberGetQuestion = 0;
+	quizzes = rooms[session->player->roomLoc]->quizzes;
 	LeaveCriticalSection(&criticalSection);
 	if (checkMaster) {
 		// if player is not room master
@@ -634,6 +658,7 @@ void startGame(LP_Session session, string &log) {
 		strcpy(session->buffer, "250 start game");
 		char buff[DATA_BUFSIZE];
 		strcpy(buff, "250 start game");
+		getQuizDB(quizzes);
 		EnterCriticalSection(&criticalSection);
 		rooms[roomIndex]->numberAnswer = 0;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
@@ -650,31 +675,58 @@ void startGame(LP_Session session, string &log) {
 	writeInLogFile(log);
 }
 
-// get quiz
 void getQuiz(LP_Session session, string &log) {
 	LP_Player player = session->player;
 	string rs;
-	SQLHANDLE sqlStmtHandle;
-	LP_Question quiz;
-	sqlStmtHandle = NULL;
-	int quizID = 2;
 	int roomIndex;
-	string query = "SELECT * FROM quiz WHERE id=" + to_string(quizID);
+	string question;
+	EnterCriticalSection(&criticalSection);
+	roomIndex = player->roomLoc;
+	question = rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->question;
+	rooms[roomIndex]->numberGetQuestion++;
+	if (rooms[roomIndex]->numberGetQuestion == rooms[roomIndex]->numberOfPlayer) {
+		rooms[roomIndex]->numberGetQuestion = 0;
+		rooms[roomIndex]->questionNumber++;
+	}
+	cout << rooms[roomIndex]->numberGetQuestion << endl;
+	cout << rooms[roomIndex]->questionNumber << endl;
+	LeaveCriticalSection(&criticalSection);
+	rs = "290 " + question;
+	strcpy(session->buffer, rs.c_str());
+	writeInLogFile(log);
+}
+
+// get quiz
+void getQuizDB(LP_Question *quiz) {
+	SQLHANDLE sqlStmtHandle;
+	sqlStmtHandle = NULL;
+	string query = "SELECT TOP 10 * FROM quiz";
 	// convert string to L string
 	PWSTR lquery = convertStringToLPWSTR(query);
 	// handle query
 	EnterCriticalSection(&criticalSection);
 	sqlStmtHandle = handleQuery(sqlConnHandle, lquery);
-	quiz = rooms[session->player->roomLoc]->quiz;
 	LeaveCriticalSection(&criticalSection);
 
-	EnterCriticalSection(&criticalSection);
-	roomIndex = player->roomLoc;
-	LeaveCriticalSection(&criticalSection);
-
-	int fetch = SQLFetch(sqlStmtHandle);
-	if (sqlStmtHandle) {
-		if (fetch == SQL_SUCCESS) {
+	for (int i = 0; i < QUIZ_SIZE; ++i) {
+		int fetch = SQLFetch(sqlStmtHandle);
+		if (sqlStmtHandle) {
+			if (fetch == SQL_SUCCESS) {
+				if ((quiz[i] = (LP_Question)GlobalAlloc(GPTR, sizeof(Question))) == NULL) {
+					printf("GlobalAlloc() failed with error %d\n", GetLastError());
+				}
+				else {
+					SQLINTEGER ptrSqlVersion;
+					SQLGetData(sqlStmtHandle, 2, SQL_C_CHAR, &quiz[i]->question, SQL_RESULT_LEN, &ptrSqlVersion);
+					SQLGetData(sqlStmtHandle, 3, SQL_C_CHAR, &quiz[i]->correct_answer, SQL_RESULT_LEN, &ptrSqlVersion);
+					cout << quiz[i]->question << endl;
+					cout << quiz[i]->correct_answer << endl;
+				}
+			}
+		}
+	}
+	/*if (sqlStmtHandle) {
+		while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
 			SQLINTEGER ptrSqlVersion;
 			SQLGetData(sqlStmtHandle, 2, SQL_C_CHAR, &quiz->question, SQL_RESULT_LEN, &ptrSqlVersion);
 			SQLGetData(sqlStmtHandle, 3, SQL_C_CHAR, &quiz->correct_answer, SQL_RESULT_LEN, &ptrSqlVersion);
@@ -695,7 +747,7 @@ void getQuiz(LP_Session session, string &log) {
 				cout << rooms[roomIndex]->players[i] << endl;
 				if (rooms[roomIndex]->players[i]) {
 					cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
-					if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
+					if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
 						cout << "check" << endl;
 						sendMessage(buff, rooms[roomIndex]->players[i]->socket);
 					}
@@ -703,14 +755,8 @@ void getQuiz(LP_Session session, string &log) {
 			}
 			LeaveCriticalSection(&criticalSection);
 		}
-		else {
-			rs = "490 quiz does not exists!";
-			log += "490";
-		}
-	}
-	strcpy(session->buffer, rs.c_str());
+	}*/
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
-	writeInLogFile(log);
 }
 
 /* The exitRoom function create a room
