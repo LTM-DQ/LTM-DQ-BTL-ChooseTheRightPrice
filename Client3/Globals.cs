@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -57,7 +58,8 @@ namespace Client3
                         string payload = dataReceive.Substring(4);
                         Console.WriteLine(opcode);
                         Console.WriteLine(payload);
-                        handleMessage(opcode, payload);
+                        Thread t3 = new Thread(() => handleMessage(opcode, payload));
+                        t3.Start();
                     }
                 }
 
@@ -221,6 +223,7 @@ namespace Client3
                         pnlStartGame.Visible = false;
                         countDownTimeWait.Enabled = true;
                     });
+                   
                     break;
                 case "260":
                     try
