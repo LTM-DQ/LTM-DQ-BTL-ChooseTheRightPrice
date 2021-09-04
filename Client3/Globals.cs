@@ -56,10 +56,8 @@ namespace Client3
                         Console.WriteLine(dataReceive);
                         string opcode = dataReceive.Substring(0, 3);
                         string payload = dataReceive.Substring(4);
-                        Console.WriteLine(opcode);
-                        Console.WriteLine(payload);
-                        Thread t3 = new Thread(() => handleMessage(opcode, payload));
-                        t3.Start();
+                        handleMessage(opcode, payload);
+                    
                     }
                 }
 

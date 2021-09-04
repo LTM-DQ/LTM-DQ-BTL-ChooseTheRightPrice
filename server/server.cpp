@@ -607,7 +607,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 		}
 		rooms[roomIndex]->numberAnswer = 0;
 	}
-	else {
+	/*else {
 		strcat(buff, "260 ");
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
@@ -624,7 +624,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 				strcat(buff, "\n");
 			}
 		}
-	}
+	}*/
 	cout << buff << endl;
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, buff);
