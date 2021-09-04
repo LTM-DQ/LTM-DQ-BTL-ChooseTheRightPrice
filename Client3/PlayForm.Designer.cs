@@ -57,6 +57,9 @@
             this.lblRoomCode = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.dataGridView2 = new System.Windows.Forms.DataGridView();
+            this.Username = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Score = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlPlaying.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.pnlStartGame.SuspendLayout();
@@ -65,6 +68,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             this.SuspendLayout();
             // 
             // button1
@@ -91,6 +95,7 @@
             // 
             // pnlPlaying
             // 
+            this.pnlPlaying.Controls.Add(this.dataGridView2);
             this.pnlPlaying.Controls.Add(this.label4);
             this.pnlPlaying.Controls.Add(this.button2);
             this.pnlPlaying.Controls.Add(this.txtAnswer);
@@ -173,7 +178,7 @@
             // 
             this.pnlStartGame.Controls.Add(this.label5);
             this.pnlStartGame.Controls.Add(this.btnStartGame);
-            this.pnlStartGame.Location = new System.Drawing.Point(21, 67);
+            this.pnlStartGame.Location = new System.Drawing.Point(19, 61);
             this.pnlStartGame.Margin = new System.Windows.Forms.Padding(2);
             this.pnlStartGame.Name = "pnlStartGame";
             this.pnlStartGame.Size = new System.Drawing.Size(957, 343);
@@ -372,13 +377,37 @@
             this.timer2.Interval = 1000;
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
+            // dataGridView2
+            // 
+            this.dataGridView2.AllowUserToAddRows = false;
+            this.dataGridView2.AllowUserToDeleteRows = false;
+            this.dataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridView2.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.Username,
+            this.Score});
+            this.dataGridView2.Location = new System.Drawing.Point(14, 41);
+            this.dataGridView2.Name = "dataGridView2";
+            this.dataGridView2.ReadOnly = true;
+            this.dataGridView2.Size = new System.Drawing.Size(243, 195);
+            this.dataGridView2.TabIndex = 12;
+            // 
+            // Username
+            // 
+            this.Username.HeaderText = "Username";
+            this.Username.Name = "Username";
+            // 
+            // Score
+            // 
+            this.Score.HeaderText = "Score";
+            this.Score.Name = "Score";
+            // 
             // PlayForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1004, 609);
-            this.Controls.Add(this.pnlStartGame);
             this.Controls.Add(this.lblRoomCode);
+            this.Controls.Add(this.pnlStartGame);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.pnlPlaying);
             this.Controls.Add(this.label1);
@@ -398,6 +427,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -434,5 +464,8 @@
         private System.Windows.Forms.Label labelAnswer1;
         private System.Windows.Forms.Label labelAnswer0;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.DataGridView dataGridView2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Username;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Score;
     }
 }

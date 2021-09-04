@@ -227,6 +227,11 @@ namespace Client3
                     try
                     {
                         var labelAnswers = Client3.PlayForm.instance.labelAnswers;
+                        var tableScore = Client3.PlayForm.instance.tableScore;
+                        tableScore.Invoke((MethodInvoker)delegate
+                        {
+                            tableScore.Rows.Clear();
+                        });
                         string[] listUser = payload.Split('\n');
                         for (int i = 0; i < 4; ++i)
                         {
@@ -238,9 +243,11 @@ namespace Client3
                             //    Console.WriteLine(listData[j] + "\n");
                             //}
                             var labelAnswerI = labelAnswers[i];
+                            string[] row = { listData[0], listData[2] };
                             labelAnswerI.Invoke((MethodInvoker)delegate
                             {
                                 labelAnswerI.Text = listData[1];
+                                tableScore.Rows.Add(row);
                             });
                         }
                     }
@@ -266,7 +273,7 @@ namespace Client3
                     var numberTime = Client3.PlayForm.instance.i;
                     labelQuestion.Invoke((MethodInvoker)delegate
                     {
-                        labelQuestion.Text = "question";
+                        labelQuestion.Text = payload;
                         countDownTimePlay.Enabled = false;
                         countDownTimeWait.Enabled = false;
                         numberTime = 30;
