@@ -226,8 +226,10 @@ namespace Client3
                 case "260":
                     try
                     {
+                        //if (payload == "") break;
                         var labelAnswers = Client3.PlayForm.instance.labelAnswers;
                         var tableScore = Client3.PlayForm.instance.tableScore;
+                        var labelResult = Client3.PlayForm.instance.lblResult;
                         tableScore.Invoke((MethodInvoker)delegate
                         {
                             tableScore.Rows.Clear();
@@ -248,6 +250,7 @@ namespace Client3
                             {
                                 labelAnswerI.Text = listData[1];
                                 tableScore.Rows.Add(row);
+                                labelResult.Text = listData[3];
                             });
                         }
                     }

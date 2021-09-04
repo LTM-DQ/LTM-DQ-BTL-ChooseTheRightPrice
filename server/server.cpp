@@ -577,7 +577,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
 				rs = rooms[roomIndex]->players[i]->username;
-				rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
+				rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + " " + to_string(correctAnswer)+ "\n";
 				strcat(buff, rs.c_str());
 			}
 			else {
@@ -594,24 +594,6 @@ void handleAnswer(LP_Session session, string &log, string data) {
 		}
 		rooms[roomIndex]->numberAnswer = 0;
 	}
-	/*else {
-		strcat(buff, "260 ");
-		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			if (rooms[roomIndex]->players[i]) {
-				if (rooms[roomIndex]->players[i]->userID == session->player->userID) {
-					rs = rooms[roomIndex]->players[i]->username;
-					rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
-					strcat(buff, rs.c_str());
-				}
-				else {
-					strcat(buff, "\n");
-				}
-			}
-			else {
-				strcat(buff, "\n");
-			}
-		}
-	}*/
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, buff);
 	writeInLogFile(log);
@@ -677,19 +659,20 @@ void getQuiz(LP_Session session, string &log) {
 	string firstUsername;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
-	if (rooms[roomIndex]->questionNumber == MAX_QUESTION - 1) {
+	if (rooms[roomIndex]->questionNumber == MAX_QUESTION) {
 		// end game
 		rs = "291 end game";
 	}
 	else {
 		// get quiz in quizzes array
 		question = rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->question;
+		rs = "290 Question " + to_string(rooms[roomIndex]->questionNumber + 1) + ": " + question;
 		rooms[roomIndex]->numberGetQuestion++;
 		if (rooms[roomIndex]->numberGetQuestion == rooms[roomIndex]->numberOfPlayer) {
 			rooms[roomIndex]->numberGetQuestion = 0;
 			rooms[roomIndex]->questionNumber++;
 		}
-		rs = "290 " + question;
+		
 	}
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, rs.c_str());

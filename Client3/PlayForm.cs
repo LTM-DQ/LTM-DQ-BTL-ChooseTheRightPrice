@@ -15,7 +15,7 @@ namespace Client3
     public partial class PlayForm : Form
     {
         public static PlayForm instance;
-        public Label labelRoomCode;
+        public Label labelRoomCode, lblResult;
         public Label labelQues;
         public Timer countDownTimePlay, countDownTimeWait;
         public Label[] labelUsers = new Label[4];
@@ -63,6 +63,7 @@ namespace Client3
             buttonStartGame = btnStartGame;
             i = 5;
             tableScore = dataGridView2;
+            lblResult = labelResult;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)
