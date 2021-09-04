@@ -51,15 +51,13 @@ namespace Client3
                                                SocketFlags.None);
                     if (byteRcv > 0)
                     {
+                        // quy1
                         messageRcv[byteRcv] = 0;
                         string dataReceive = Encoding.UTF8.GetString(messageRcv);
                         Console.WriteLine(dataReceive);
                         string opcode = dataReceive.Substring(0, 3);
                         string payload = dataReceive.Substring(4);
-                        Console.WriteLine(opcode);
-                        Console.WriteLine(payload);
-                        Thread t3 = new Thread(() => handleMessage(opcode, payload));
-                        t3.Start();
+                        handleMessage(opcode, payload);
                     }
                 }
 
@@ -258,6 +256,20 @@ namespace Client3
                     {
                         labelQuestion.Text = payload;
                         //countDownTimePlay.Enabled = true;
+                    });
+                    break;
+                case "291":
+                    Console.WriteLine(payload);
+                    labelQuestion = Client3.PlayForm.instance.labelQues;
+                    var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
+                    countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
+                    var numberTime = Client3.PlayForm.instance.i;
+                    labelQuestion.Invoke((MethodInvoker)delegate
+                    {
+                        labelQuestion.Text = "question";
+                        countDownTimePlay.Enabled = false;
+                        countDownTimeWait.Enabled = false;
+                        numberTime = 30;
                     });
                     break;
                 case "451":
