@@ -109,6 +109,7 @@ void updateLoginStatus(string username, string isLogin);
 void handleAnswer(LP_Session session, string &log, string data);
 void getResult(LP_Session session, string &log);
 void getQuizDB(LP_Question *quiz);
+bool isNumber(string& s);
 
 int main(int argc, char *argv[])
 {
@@ -532,17 +533,6 @@ void handleProtocol(LP_Session session, string &log) {
 			handleAnswer(session, log, data);
 		}
 	}
-	else if (key == "RESULT") {
-		if (!session->isLogin) {
-			// check login
-			log += "402";
-			strcpy(session->buffer, "402 you are not log in");
-			writeInLogFile(log);
-		}
-		else {
-			getResult(session, log);
-		}
-	}
 	else {
 		log += "500";
 		strcpy(session->buffer, "500 Wrong protocol!");
@@ -551,88 +541,85 @@ void handleProtocol(LP_Session session, string &log) {
 	}
 }
 
-void getResult(LP_Session session, string &log) {
-
-}
-
-// handle answer
+/* handleAnswer function is handle answer of players and return score and answer to players
+* @param session - LP_Session struct pointer manage user
+* @param log - reference variable store the activity log
+* @param data - message without protocol send by client
+*/
 void handleAnswer(LP_Session session, string &log, string data) {
 	LP_Player player = session->player;
+	if (data != "") {
+		if (!isNumber(data)) {
+			data = "";
+		}
+	}
 	session->player->answer = data;
 	char buff[DATA_BUFSIZE];
 	memset(buff, 0, DATA_BUFSIZE);
 	string rs;
 	int bestAnswer = INT_MAX;
-	int playerAnswerCorrect, correctAnswer, roomIndex;
+	int distance[MAX_PLAYER_IN_ROOM] = { -1 };
+	int correctAnswer, roomIndex;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = session->player->roomLoc;
 	rooms[roomIndex]->numberAnswer++;
 	if (rooms[roomIndex]->numberAnswer == rooms[roomIndex]->numberOfPlayer) {
+		// when all player answer, the system going to start handle answer
 		strcat(buff, "260 ");
 		correctAnswer = atoi(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber-1]->correct_answer);
-		cout << "numberAnswer: " << rooms[roomIndex]->numberAnswer << endl;
+		// find the player has the best answer and plus 10 point
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->answer != "") {
-					int distance = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
-					if (distance < bestAnswer) {
-						bestAnswer = distance;
-						playerAnswerCorrect = i;
+					distance[i] = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
+					if (distance[i] < bestAnswer) {
+						bestAnswer = distance[i];
 					}
 				}
 			}
 		}
-		rooms[roomIndex]->players[playerAnswerCorrect]->score += 10;
-		
+		// if no one answer, don't plus score
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			if (distance[i] != -1) {
+				if (distance[i] == bestAnswer) 
+					rooms[roomIndex]->players[i]->score += 10;
+			}
+		}		
+		// create message response client
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
 				rs = rooms[roomIndex]->players[i]->username;
-				rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
+				rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + " " + to_string(correctAnswer)+ "\n";
 				strcat(buff, rs.c_str());
 			}
 			else {
 				strcat(buff, "\n");
 			}
 		}
+		// send message to clients
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
-					cout << "in"<< buff << endl;
 					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
 				}
 			}
 		}
 		rooms[roomIndex]->numberAnswer = 0;
 	}
-	/*else {
-		strcat(buff, "260 ");
-		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			if (rooms[roomIndex]->players[i]) {
-				if (rooms[roomIndex]->players[i]->userID == session->player->userID) {
-					rs = rooms[roomIndex]->players[i]->username;
-					rs += " " + rooms[roomIndex]->players[i]->answer + " " + to_string(rooms[roomIndex]->players[i]->score) + "\n";
-					strcat(buff, rs.c_str());
-				}
-				else {
-					strcat(buff, "\n");
-				}
-			}
-			else {
-				strcat(buff, "\n");
-			}
-		}
-	}*/
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, buff);
 	writeInLogFile(log);
 }
 
-// start game
+/* startGame function is start a game
+* @param session - LP_Session struct pointer manage user
+* @param log - reference variable store the activity log
+*/
 void startGame(LP_Session session, string &log) {
 	LP_Player player = session->player;
 	LP_Question *quizzes;
 	int roomIndex;
+	int numberPlayerInRoom;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
 	bool checkMaster = rooms[roomIndex]->roomMaster->userID != player->userID;
@@ -644,6 +631,7 @@ void startGame(LP_Session session, string &log) {
 	rooms[roomIndex]->questionNumber = 0; 
 	rooms[roomIndex]->numberGetQuestion = 0;
 	quizzes = rooms[session->player->roomLoc]->quizzes;
+	numberPlayerInRoom = rooms[roomIndex]->numberOfPlayer;
 	LeaveCriticalSection(&criticalSection);
 	if (checkMaster) {
 		// if player is not room master
@@ -651,52 +639,70 @@ void startGame(LP_Session session, string &log) {
 		strcpy(session->buffer, "451 player is not room master");
 	}
 	else {
-		log += "250";
-		strcpy(session->buffer, "250 start game");
-		char buff[DATA_BUFSIZE];
-		strcpy(buff, "250 start game");
-		getQuizDB(quizzes);
-		EnterCriticalSection(&criticalSection);
-		rooms[roomIndex]->numberAnswer = 0;
-		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			if (rooms[roomIndex]->players[i]) {
-				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
-					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+		if (numberPlayerInRoom == 1) {
+			 //if not enough people in room
+			log += "450";
+			strcpy(session->buffer, "450 not enough people to start");
+		}
+		else {
+			log += "250";
+			strcpy(session->buffer, "250 start game");
+			char buff[DATA_BUFSIZE];
+			strcpy(buff, "250 start game");
+			// get quizzes in DB and save in quizzes array
+			getQuizDB(quizzes);
+			EnterCriticalSection(&criticalSection);
+			rooms[roomIndex]->numberAnswer = 0;
+			// send message start game to all player
+			for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+				if (rooms[roomIndex]->players[i]) {
+					if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
+						sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+					}
 				}
 			}
+			LeaveCriticalSection(&criticalSection);
 		}
-		LeaveCriticalSection(&criticalSection);
 	}
 	writeInLogFile(log);
 }
 
+/* The getQuiz function get quiz and send to client
+* @param session - LP_Session struct pointer manage user
+* @param log - reference variable store the activity log
+*/
 void getQuiz(LP_Session session, string &log) {
 	LP_Player player = session->player;
 	string rs;
 	int roomIndex;
 	string question;
+	int bestScore = 0;
+	string firstUsername;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
-	cout << "questionNumber: " << rooms[roomIndex]->questionNumber << endl;
-	if (rooms[roomIndex]->questionNumber == MAX_QUESTION - 1) {
-		cout << "check" << endl;
+	if (rooms[roomIndex]->questionNumber == MAX_QUESTION) {
+		// end game
 		rs = "291 end game";
 	}
 	else {
+		// get quiz in quizzes array
 		question = rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->question;
+		rs = "290 Question " + to_string(rooms[roomIndex]->questionNumber + 1) + ": " + question;
 		rooms[roomIndex]->numberGetQuestion++;
 		if (rooms[roomIndex]->numberGetQuestion == rooms[roomIndex]->numberOfPlayer) {
 			rooms[roomIndex]->numberGetQuestion = 0;
 			rooms[roomIndex]->questionNumber++;
 		}
-		rs = "290 " + question;
+		
 	}
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, rs.c_str());
 	writeInLogFile(log);
 }
 
-// get quiz
+/* The getQuizDB function get quiz in db
+* @param quiz - LP_Question struct pointer save questions
+*/
 void getQuizDB(LP_Question *quiz) {
 	SQLHANDLE sqlStmtHandle;
 	sqlStmtHandle = NULL;
@@ -716,46 +722,14 @@ void getQuizDB(LP_Question *quiz) {
 					printf("GlobalAlloc() failed with error %d\n", GetLastError());
 				}
 				else {
+					// save quizzes
 					SQLINTEGER ptrSqlVersion;
 					SQLGetData(sqlStmtHandle, 2, SQL_C_CHAR, &quiz[i]->question, SQL_RESULT_LEN, &ptrSqlVersion);
 					SQLGetData(sqlStmtHandle, 3, SQL_C_CHAR, &quiz[i]->correct_answer, SQL_RESULT_LEN, &ptrSqlVersion);
-					cout << quiz[i]->question << endl;
-					cout << quiz[i]->correct_answer << endl;
 				}
 			}
 		}
 	}
-	/*if (sqlStmtHandle) {
-		while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
-			SQLINTEGER ptrSqlVersion;
-			SQLGetData(sqlStmtHandle, 2, SQL_C_CHAR, &quiz->question, SQL_RESULT_LEN, &ptrSqlVersion);
-			SQLGetData(sqlStmtHandle, 3, SQL_C_CHAR, &quiz->correct_answer, SQL_RESULT_LEN, &ptrSqlVersion);
-			log += "290";
-			rs = quiz->question;
-			rs = "290 " + rs;
-			cout << quiz->question << endl;
-			cout << quiz->correct_answer << endl;
-
-			char buff[DATA_BUFSIZE];
-			strcpy(buff, rs.c_str());
-
-			EnterCriticalSection(&criticalSection);
-			rooms[roomIndex]->numberAnswer = 0;
-			cout << "check outside" << endl;
-			cout << "room Master " << rooms[roomIndex]->roomMaster << " " << rooms[roomIndex]->roomMaster->userID << endl;
-			for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-				cout << rooms[roomIndex]->players[i] << endl;
-				if (rooms[roomIndex]->players[i]) {
-					cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
-					if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
-						cout << "check" << endl;
-						sendMessage(buff, rooms[roomIndex]->players[i]->socket);
-					}
-				}
-			}
-			LeaveCriticalSection(&criticalSection);
-		}
-	}*/
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 }
 
@@ -1022,7 +996,7 @@ void exitRoom(LP_Session session, string &log) {
 /* The signIn function handle login request from client
 * @param session - LP_Session struct pointer manage user
 * @param log - reference variable store the activity log
-*  @param data - message without protocol send by client
+* @param data - message without protocol send by client
 * @return No return value
 */
 void signUp(LP_Session session, string &log, string data) {
@@ -1094,7 +1068,6 @@ void signIn(LP_Session session, string &log, string data) {
 			SQLINTEGER ptrSqlVersion;
 			SQLGetData(sqlStmtHandle, 1, SQL_C_ULONG, &session->userID, SQL_RESULT_LEN, &ptrSqlVersion);
 			SQLGetData(sqlStmtHandle, 4, SQL_C_LONG, &islogin, SQL_RESULT_LEN, &ptrSqlVersion);
-			cout << "session -> userID " << session->userID << endl;
 			if (islogin == 1) {
 				log += "411";
 				strcpy(session->buffer, "411 You logged in from a different location");
@@ -1152,7 +1125,6 @@ void logOut(LP_Session session, string &log) {
 */
 void updateLoginStatus(string username, string isLogin) {
 	string query = "UPDATE account SET islogin = '" + isLogin + "' WHERE username='" + username + "'";
-	cout << query << endl;
 	PWSTR lquery1 = convertStringToLPWSTR(query);
 	SQLHANDLE sqlStmtHandle1;
 	EnterCriticalSection(&criticalSection);
@@ -1173,7 +1145,6 @@ void sendMessage(char *buff, SOCKET &connectedSocket) {
 	if (ret == SOCKET_ERROR) {
 		printf("Error %d: Can't send data.\n", WSAGetLastError());
 	}
-	cout << "ret: " << ret << endl;
 }
 
 /* The writeInLogFile function write log to a file
@@ -1237,6 +1208,13 @@ string gen_random(const int len) {
 		tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
 	return tmp_s;
 
+}
+
+bool isNumber(string& s)
+{
+	auto it = s.begin();
+	while (it != s.end() && isdigit(*it)) ++it;
+	return !s.empty() && it == s.end();
 }
 
 

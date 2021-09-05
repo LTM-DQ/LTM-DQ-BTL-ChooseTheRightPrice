@@ -15,7 +15,7 @@ namespace Client3
     public partial class PlayForm : Form
     {
         public static PlayForm instance;
-        public Label labelRoomCode;
+        public Label labelRoomCode, lblResult;
         public Label labelQues;
         public Timer countDownTimePlay, countDownTimeWait;
         public Label[] labelUsers = new Label[4];
@@ -25,6 +25,7 @@ namespace Client3
         public Panel panelPlaying;
         public Panel labelCountDown;
         public Button buttonStartGame;
+        public DataGridView tableScore;
         Socket client;
         public int i;
 
@@ -61,6 +62,8 @@ namespace Client3
 
             buttonStartGame = btnStartGame;
             i = 5;
+            tableScore = dataGridView2;
+            lblResult = labelResult;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)
@@ -101,7 +104,11 @@ namespace Client3
                 timer1.Enabled = false;
                 i = 5;
                 lblCountDown.Text = i.ToString();
-                string message = "ANSWER " + answer + Globals.DELIMITER;
+                string message;
+                if (answer != "")
+                    message = "ANSWER " + answer + Globals.DELIMITER;
+                else
+                    message = "ANSWER " + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(message);
                 Globals.SendMessage(client, msg);
                 timer2.Enabled = true;
@@ -110,21 +117,6 @@ namespace Client3
 
         private void button2_Click(object sender, EventArgs e)
         {
-            //var answer = txtAnswer.Text;
-            //if (answer != "")
-            //{
-            //    timer1.Enabled = false;
-            //    i = 30;
-            //    lblCountDown.Text = i.ToString();
-            //    //send request to server to join room
-            //    string answerMessage = "ANSWER " + answer + Globals.DELIMITER;
-            //    byte[] msg = Encoding.UTF8.GetBytes(answerMessage);
-            //    Globals.SendMessage(client, msg);
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Please fill the room code");
-            //}
         }
 
         //Leave room
@@ -148,12 +140,13 @@ namespace Client3
             if (i == 0)
             {
                 timer2.Enabled = false;
-                i = 10;
+                i = 2;
                 lblCountDown.Text = i.ToString();
                 string message = "QUIZZZ " + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(message);
                 Globals.SendMessage(client, msg);
                 timer1.Enabled = true;
+                labelResult.Text = "0";
             }
         }
     }

@@ -246,7 +246,14 @@ namespace Client3
                 case "260":
                     try
                     {
+                        //if (payload == "") break;
                         var labelAnswers = Client3.PlayForm.instance.labelAnswers;
+                        var tableScore = Client3.PlayForm.instance.tableScore;
+                        var labelResult = Client3.PlayForm.instance.lblResult;
+                        tableScore.Invoke((MethodInvoker)delegate
+                        {
+                            tableScore.Rows.Clear();
+                        });
                         string[] listUser = payload.Split('\n');
                         for (int i = 0; i < 4; ++i)
                         {
@@ -258,9 +265,12 @@ namespace Client3
                             //    Console.WriteLine(listData[j] + "\n");
                             //}
                             var labelAnswerI = labelAnswers[i];
+                            string[] row = { listData[0], listData[2] };
                             labelAnswerI.Invoke((MethodInvoker)delegate
                             {
                                 labelAnswerI.Text = listData[1];
+                                tableScore.Rows.Add(row);
+                                labelResult.Text = listData[3];
                             });
                         }
                     }
@@ -284,15 +294,37 @@ namespace Client3
                     var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
                     countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
                     var numberTime = Client3.PlayForm.instance.i;
+                    pnlStartGame = Client3.PlayForm.instance.panelStartGame;
+                    var labelAnswers291 = Client3.PlayForm.instance.labelAnswers;
+                    var tableScore291 = Client3.PlayForm.instance.tableScore;
                     labelQuestion.Invoke((MethodInvoker)delegate
                     {
-                        labelQuestion.Text = "question";
+                        labelQuestion.Text = payload;
                         countDownTimePlay.Enabled = false;
                         countDownTimeWait.Enabled = false;
-                        numberTime = 30;
+                        numberTime = 5;
+                    });
+                    pnlStartGame.Invoke((MethodInvoker)delegate
+                    {
+                        pnlStartGame.Visible = true;
+                    });
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        var labelAnswerI = labelAnswers291[i];
+                        labelAnswerI.Invoke((MethodInvoker)delegate
+                        {
+                            labelAnswerI.Text = "0";
+                        });
+                    }
+                    tableScore291.Invoke((MethodInvoker)delegate
+                    {
+                        tableScore291.Rows.Clear();
                     });
                     break;
                 case "451":
+                    MessageBox.Show(payload);
+                    break;
+                case "450":
                     MessageBox.Show(payload);
                     break;
                 default:

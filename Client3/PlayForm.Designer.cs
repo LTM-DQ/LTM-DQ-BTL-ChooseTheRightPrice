@@ -32,10 +32,14 @@
             this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.pnlPlaying = new System.Windows.Forms.Panel();
+            this.labelResult = new System.Windows.Forms.Label();
+            this.dataGridView2 = new System.Windows.Forms.DataGridView();
+            this.Username = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Score = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label4 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
             this.txtAnswer = new System.Windows.Forms.TextBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.lblQuestion = new System.Windows.Forms.Label();
             this.lblCountDown = new System.Windows.Forms.Label();
             this.pnlStartGame = new System.Windows.Forms.Panel();
@@ -57,8 +61,9 @@
             this.lblRoomCode = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.pnlPlaying.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             this.pnlStartGame.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser4)).BeginInit();
@@ -90,17 +95,60 @@
             // 
             // pnlPlaying
             // 
+            this.pnlPlaying.Controls.Add(this.labelResult);
+            this.pnlPlaying.Controls.Add(this.dataGridView2);
             this.pnlPlaying.Controls.Add(this.label4);
             this.pnlPlaying.Controls.Add(this.button2);
+            this.pnlPlaying.Controls.Add(this.label2);
             this.pnlPlaying.Controls.Add(this.txtAnswer);
-            this.pnlPlaying.Controls.Add(this.pictureBox1);
             this.pnlPlaying.Controls.Add(this.lblQuestion);
             this.pnlPlaying.Controls.Add(this.lblCountDown);
+<<<<<<< HEAD
             this.pnlPlaying.Location = new System.Drawing.Point(27, 90);
             this.pnlPlaying.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+=======
+            this.pnlPlaying.Location = new System.Drawing.Point(22, 71);
+            this.pnlPlaying.Margin = new System.Windows.Forms.Padding(2);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.pnlPlaying.Name = "pnlPlaying";
             this.pnlPlaying.Size = new System.Drawing.Size(1277, 391);
             this.pnlPlaying.TabIndex = 18;
+            // 
+            // labelResult
+            // 
+            this.labelResult.AutoSize = true;
+            this.labelResult.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelResult.Location = new System.Drawing.Point(108, 275);
+            this.labelResult.Name = "labelResult";
+            this.labelResult.Size = new System.Drawing.Size(20, 24);
+            this.labelResult.TabIndex = 102;
+            this.labelResult.Text = "0";
+            // 
+            // dataGridView2
+            // 
+            this.dataGridView2.AllowUserToAddRows = false;
+            this.dataGridView2.AllowUserToDeleteRows = false;
+            this.dataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridView2.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.Username,
+            this.Score});
+            this.dataGridView2.Location = new System.Drawing.Point(14, 41);
+            this.dataGridView2.Name = "dataGridView2";
+            this.dataGridView2.ReadOnly = true;
+            this.dataGridView2.Size = new System.Drawing.Size(243, 195);
+            this.dataGridView2.TabIndex = 12;
+            // 
+            // Username
+            // 
+            this.Username.HeaderText = "Username";
+            this.Username.Name = "Username";
+            this.Username.ReadOnly = true;
+            // 
+            // Score
+            // 
+            this.Score.HeaderText = "Score";
+            this.Score.Name = "Score";
+            this.Score.ReadOnly = true;
             // 
             // label4
             // 
@@ -115,14 +163,29 @@
             // button2
             // 
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+<<<<<<< HEAD
             this.button2.Location = new System.Drawing.Point(936, 266);
             this.button2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+=======
+            this.button2.Location = new System.Drawing.Point(410, 168);
+            this.button2.Margin = new System.Windows.Forms.Padding(2);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(253, 66);
             this.button2.TabIndex = 8;
             this.button2.Text = "Submit";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(35, 275);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(67, 24);
+            this.label2.TabIndex = 101;
+            this.label2.Text = "Result:";
             // 
             // txtAnswer
             // 
@@ -133,6 +196,7 @@
             this.txtAnswer.Size = new System.Drawing.Size(255, 39);
             this.txtAnswer.TabIndex = 7;
             // 
+<<<<<<< HEAD
             // pictureBox1
             // 
             this.pictureBox1.BackgroundImage = global::Client3.Properties.Resources.egg;
@@ -145,6 +209,8 @@
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
             // 
+=======
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             // lblQuestion
             // 
             this.lblQuestion.AutoSize = true;
@@ -161,10 +227,16 @@
             this.lblCountDown.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblCountDown.Location = new System.Drawing.Point(1175, 18);
             this.lblCountDown.Name = "lblCountDown";
+<<<<<<< HEAD
             this.lblCountDown.Size = new System.Drawing.Size(66, 46);
             this.lblCountDown.TabIndex = 4;
             this.lblCountDown.Text = "30";
             this.lblCountDown.Click += new System.EventHandler(this.lblCountDown_Click);
+=======
+            this.lblCountDown.Size = new System.Drawing.Size(36, 37);
+            this.lblCountDown.TabIndex = 4;
+            this.lblCountDown.Text = "5";
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             // 
             // pnlStartGame
             // 
@@ -173,8 +245,13 @@
             this.pnlStartGame.Location = new System.Drawing.Point(28, 90);
             this.pnlStartGame.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStartGame.Name = "pnlStartGame";
+<<<<<<< HEAD
             this.pnlStartGame.Size = new System.Drawing.Size(1276, 389);
             this.pnlStartGame.TabIndex = 10;
+=======
+            this.pnlStartGame.Size = new System.Drawing.Size(957, 343);
+            this.pnlStartGame.TabIndex = 100;
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             // 
             // label5
             // 
@@ -225,44 +302,74 @@
             // 
             this.labelAnswer3.AutoSize = true;
             this.labelAnswer3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+<<<<<<< HEAD
             this.labelAnswer3.Location = new System.Drawing.Point(1011, 11);
             this.labelAnswer3.Name = "labelAnswer3";
             this.labelAnswer3.Size = new System.Drawing.Size(64, 25);
+=======
+            this.labelAnswer3.ForeColor = System.Drawing.Color.Red;
+            this.labelAnswer3.Location = new System.Drawing.Point(774, 10);
+            this.labelAnswer3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelAnswer3.Name = "labelAnswer3";
+            this.labelAnswer3.Size = new System.Drawing.Size(18, 20);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.labelAnswer3.TabIndex = 11;
-            this.labelAnswer3.Text = "label7";
+            this.labelAnswer3.Text = "0";
             // 
             // labelAnswer2
             // 
             this.labelAnswer2.AutoSize = true;
             this.labelAnswer2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+<<<<<<< HEAD
             this.labelAnswer2.Location = new System.Drawing.Point(749, 11);
             this.labelAnswer2.Name = "labelAnswer2";
             this.labelAnswer2.Size = new System.Drawing.Size(64, 25);
+=======
+            this.labelAnswer2.ForeColor = System.Drawing.Color.Red;
+            this.labelAnswer2.Location = new System.Drawing.Point(578, 10);
+            this.labelAnswer2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelAnswer2.Name = "labelAnswer2";
+            this.labelAnswer2.Size = new System.Drawing.Size(18, 20);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.labelAnswer2.TabIndex = 10;
-            this.labelAnswer2.Text = "label6";
+            this.labelAnswer2.Text = "0";
             // 
             // labelAnswer1
             // 
             this.labelAnswer1.AutoSize = true;
             this.labelAnswer1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelAnswer1.ForeColor = System.Drawing.Color.Red;
+<<<<<<< HEAD
             this.labelAnswer1.Location = new System.Drawing.Point(496, 12);
             this.labelAnswer1.Name = "labelAnswer1";
             this.labelAnswer1.Size = new System.Drawing.Size(64, 25);
+=======
+            this.labelAnswer1.Location = new System.Drawing.Point(394, 10);
+            this.labelAnswer1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelAnswer1.Name = "labelAnswer1";
+            this.labelAnswer1.Size = new System.Drawing.Size(18, 20);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.labelAnswer1.TabIndex = 9;
-            this.labelAnswer1.Text = "label3";
+            this.labelAnswer1.Text = "0";
             // 
             // labelAnswer0
             // 
             this.labelAnswer0.AutoSize = true;
-            this.labelAnswer0.BackColor = System.Drawing.Color.Black;
+            this.labelAnswer0.BackColor = System.Drawing.SystemColors.Control;
             this.labelAnswer0.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelAnswer0.ForeColor = System.Drawing.Color.Red;
+<<<<<<< HEAD
             this.labelAnswer0.Location = new System.Drawing.Point(224, 11);
             this.labelAnswer0.Name = "labelAnswer0";
             this.labelAnswer0.Size = new System.Drawing.Size(56, 25);
+=======
+            this.labelAnswer0.Location = new System.Drawing.Point(190, 10);
+            this.labelAnswer0.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelAnswer0.Name = "labelAnswer0";
+            this.labelAnswer0.Size = new System.Drawing.Size(18, 20);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.labelAnswer0.TabIndex = 8;
-            this.labelAnswer0.Text = "0000";
+            this.labelAnswer0.Text = "0";
             // 
             // lblUser4
             // 
@@ -363,9 +470,16 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+<<<<<<< HEAD
             this.ClientSize = new System.Drawing.Size(1339, 750);
             this.Controls.Add(this.pnlStartGame);
             this.Controls.Add(this.lblRoomCode);
+=======
+            this.ClientSize = new System.Drawing.Size(1004, 609);
+            this.Controls.Add(this.lblRoomCode);
+            this.Controls.Add(this.pnlStartGame);
+            this.Controls.Add(this.panel2);
+>>>>>>> a37f784421200900286acff13a6dc1e344272f45
             this.Controls.Add(this.pnlPlaying);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.label1);
@@ -376,7 +490,7 @@
             this.Load += new System.EventHandler(this.PlayForm_Load);
             this.pnlPlaying.ResumeLayout(false);
             this.pnlPlaying.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
             this.pnlStartGame.ResumeLayout(false);
             this.pnlStartGame.PerformLayout();
             this.panel2.ResumeLayout(false);
@@ -395,7 +509,6 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel pnlPlaying;
-        private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label labelQuestion;
         private System.Windows.Forms.Label lblCountDown;
         private System.Windows.Forms.Label label4;
@@ -421,5 +534,11 @@
         private System.Windows.Forms.Label labelAnswer1;
         private System.Windows.Forms.Label labelAnswer0;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.DataGridView dataGridView2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Username;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Score;
+        private System.Windows.Forms.Label labelResult;
+        private System.Windows.Forms.Label label2;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
