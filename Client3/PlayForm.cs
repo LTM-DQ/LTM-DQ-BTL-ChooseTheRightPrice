@@ -136,6 +136,11 @@ namespace Client3
             Globals.SendMessage(client, msg);
         }
 
+        private void lblCountDown_Click(object sender, EventArgs e)
+        {
+
+        }
+
         private void timer2_Tick(object sender, EventArgs e)
         {
             i--;

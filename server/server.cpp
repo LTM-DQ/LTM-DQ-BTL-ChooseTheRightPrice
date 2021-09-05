@@ -27,6 +27,7 @@ using namespace std;
 #define MAX_PLAYER_IN_ROOM 4
 #define MAX_ROOM 256
 #define QUIZ_SIZE 10
+#define MAX_QUESTION 10
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -568,10 +569,9 @@ void handleAnswer(LP_Session session, string &log, string data) {
 	rooms[roomIndex]->numberAnswer++;
 	if (rooms[roomIndex]->numberAnswer == rooms[roomIndex]->numberOfPlayer) {
 		strcat(buff, "260 ");
-		correctAnswer = atoi(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->correct_answer);
+		correctAnswer = atoi(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber-1]->correct_answer);
 		cout << "numberAnswer: " << rooms[roomIndex]->numberAnswer << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->answer != "") {
 					int distance = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
@@ -594,9 +594,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 				strcat(buff, "\n");
 			}
 		}
-		cout << "check1" << endl;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			cout << "check2" << endl;
 			cout << rooms[roomIndex]->players[i] << endl;
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->userID != session->player->userID) {
@@ -625,7 +623,6 @@ void handleAnswer(LP_Session session, string &log, string data) {
 			}
 		}
 	}*/
-	cout << buff << endl;
 	LeaveCriticalSection(&criticalSection);
 	strcpy(session->buffer, buff);
 	writeInLogFile(log);
@@ -644,7 +641,7 @@ void startGame(LP_Session session, string &log) {
 		if (rooms[roomIndex]->players[i])
 			rooms[roomIndex]->players[i]->score = 0;
 	}
-	rooms[roomIndex]->questionNumber = 0;
+	rooms[roomIndex]->questionNumber = 0; 
 	rooms[roomIndex]->numberGetQuestion = 0;
 	quizzes = rooms[session->player->roomLoc]->quizzes;
 	LeaveCriticalSection(&criticalSection);
@@ -663,7 +660,6 @@ void startGame(LP_Session session, string &log) {
 		rooms[roomIndex]->numberAnswer = 0;
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
-				cout << "test rooms " << rooms[roomIndex]->players[i]->userID << endl;
 				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
 					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
 				}
@@ -671,7 +667,6 @@ void startGame(LP_Session session, string &log) {
 		}
 		LeaveCriticalSection(&criticalSection);
 	}
-	cout << session->buffer << endl;
 	writeInLogFile(log);
 }
 
@@ -682,16 +677,21 @@ void getQuiz(LP_Session session, string &log) {
 	string question;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
-	question = rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->question;
-	rooms[roomIndex]->numberGetQuestion++;
-	if (rooms[roomIndex]->numberGetQuestion == rooms[roomIndex]->numberOfPlayer) {
-		rooms[roomIndex]->numberGetQuestion = 0;
-		rooms[roomIndex]->questionNumber++;
+	cout << "questionNumber: " << rooms[roomIndex]->questionNumber << endl;
+	if (rooms[roomIndex]->questionNumber == MAX_QUESTION - 1) {
+		cout << "check" << endl;
+		rs = "291 end game";
 	}
-	cout << rooms[roomIndex]->numberGetQuestion << endl;
-	cout << rooms[roomIndex]->questionNumber << endl;
+	else {
+		question = rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber]->question;
+		rooms[roomIndex]->numberGetQuestion++;
+		if (rooms[roomIndex]->numberGetQuestion == rooms[roomIndex]->numberOfPlayer) {
+			rooms[roomIndex]->numberGetQuestion = 0;
+			rooms[roomIndex]->questionNumber++;
+		}
+		rs = "290 " + question;
+	}
 	LeaveCriticalSection(&criticalSection);
-	rs = "290 " + question;
 	strcpy(session->buffer, rs.c_str());
 	writeInLogFile(log);
 }
@@ -1173,6 +1173,7 @@ void sendMessage(char *buff, SOCKET &connectedSocket) {
 	if (ret == SOCKET_ERROR) {
 		printf("Error %d: Can't send data.\n", WSAGetLastError());
 	}
+	cout << "ret: " << ret << endl;
 }
 
 /* The writeInLogFile function write log to a file

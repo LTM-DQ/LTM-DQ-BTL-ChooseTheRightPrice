@@ -41,57 +41,61 @@
             // 
             // txtUsernameLogin
             // 
-            this.txtUsernameLogin.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtUsernameLogin.Location = new System.Drawing.Point(455, 186);
+            this.txtUsernameLogin.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtUsernameLogin.Location = new System.Drawing.Point(711, 190);
             this.txtUsernameLogin.Name = "txtUsernameLogin";
-            this.txtUsernameLogin.Size = new System.Drawing.Size(321, 30);
+            this.txtUsernameLogin.Size = new System.Drawing.Size(302, 34);
             this.txtUsernameLogin.TabIndex = 0;
             // 
             // txtPasswordLogin
             // 
-            this.txtPasswordLogin.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtPasswordLogin.Location = new System.Drawing.Point(455, 298);
+            this.txtPasswordLogin.BackColor = System.Drawing.Color.White;
+            this.txtPasswordLogin.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtPasswordLogin.Location = new System.Drawing.Point(711, 324);
             this.txtPasswordLogin.Name = "txtPasswordLogin";
             this.txtPasswordLogin.PasswordChar = '*';
-            this.txtPasswordLogin.Size = new System.Drawing.Size(321, 30);
+            this.txtPasswordLogin.Size = new System.Drawing.Size(302, 34);
             this.txtPasswordLogin.TabIndex = 1;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(524, 64);
+            this.label1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
+            this.label1.Font = new System.Drawing.Font("Roboto Condensed", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.ForeColor = System.Drawing.Color.White;
+            this.label1.Location = new System.Drawing.Point(528, 36);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(78, 29);
+            this.label1.Size = new System.Drawing.Size(126, 37);
             this.label1.TabIndex = 2;
-            this.label1.Text = "Login";
+            this.label1.Text = "Welcome";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(326, 300);
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(520, 327);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(98, 23);
+            this.label2.Size = new System.Drawing.Size(120, 29);
             this.label2.TabIndex = 3;
             this.label2.Text = "Password";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(326, 188);
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.Location = new System.Drawing.Point(520, 193);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(98, 23);
+            this.label3.Size = new System.Drawing.Size(124, 29);
             this.label3.TabIndex = 4;
             this.label3.Text = "Username";
             // 
             // btnLogin
             // 
             this.btnLogin.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnLogin.Location = new System.Drawing.Point(660, 428);
+            this.btnLogin.Font = new System.Drawing.Font("Minion Pro", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnLogin.Location = new System.Drawing.Point(891, 410);
             this.btnLogin.Name = "btnLogin";
-            this.btnLogin.Size = new System.Drawing.Size(102, 34);
+            this.btnLogin.Size = new System.Drawing.Size(122, 41);
             this.btnLogin.TabIndex = 5;
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
@@ -100,12 +104,14 @@
             // btnRegister
             // 
             this.btnRegister.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRegister.Location = new System.Drawing.Point(466, 428);
+            this.btnRegister.Font = new System.Drawing.Font("Minion Pro", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRegister.Location = new System.Drawing.Point(891, 529);
             this.btnRegister.Name = "btnRegister";
-            this.btnRegister.Size = new System.Drawing.Size(85, 34);
+            this.btnRegister.Size = new System.Drawing.Size(122, 41);
             this.btnRegister.TabIndex = 6;
             this.btnRegister.Text = "Register";
             this.btnRegister.UseVisualStyleBackColor = true;
+            this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
             // 
             // btnShowPass
             // 
@@ -115,9 +121,9 @@
             this.btnShowPass.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnShowPass.FlatAppearance.BorderSize = 0;
             this.btnShowPass.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnShowPass.Location = new System.Drawing.Point(737, 300);
+            this.btnShowPass.Location = new System.Drawing.Point(1019, 324);
             this.btnShowPass.Name = "btnShowPass";
-            this.btnShowPass.Size = new System.Drawing.Size(25, 25);
+            this.btnShowPass.Size = new System.Drawing.Size(36, 34);
             this.btnShowPass.TabIndex = 8;
             this.btnShowPass.UseVisualStyleBackColor = false;
             this.btnShowPass.Click += new System.EventHandler(this.btnShowPass_Click);
@@ -130,9 +136,9 @@
             this.btnHidePass.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnHidePass.FlatAppearance.BorderSize = 0;
             this.btnHidePass.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnHidePass.Location = new System.Drawing.Point(737, 301);
+            this.btnHidePass.Location = new System.Drawing.Point(1019, 324);
             this.btnHidePass.Name = "btnHidePass";
-            this.btnHidePass.Size = new System.Drawing.Size(25, 25);
+            this.btnHidePass.Size = new System.Drawing.Size(36, 34);
             this.btnHidePass.TabIndex = 7;
             this.btnHidePass.UseVisualStyleBackColor = false;
             this.btnHidePass.Click += new System.EventHandler(this.btnHidePass_Click);
@@ -141,7 +147,9 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1096, 656);
+            this.BackgroundImage = global::Client3.Properties.Resources.loginbackground;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.ClientSize = new System.Drawing.Size(1096, 582);
             this.Controls.Add(this.btnShowPass);
             this.Controls.Add(this.btnHidePass);
             this.Controls.Add(this.btnRegister);

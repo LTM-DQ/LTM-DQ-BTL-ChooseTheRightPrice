@@ -96,11 +96,11 @@
             this.pnlPlaying.Controls.Add(this.pictureBox1);
             this.pnlPlaying.Controls.Add(this.lblQuestion);
             this.pnlPlaying.Controls.Add(this.lblCountDown);
-            this.pnlPlaying.Location = new System.Drawing.Point(27, 80);
+            this.pnlPlaying.Location = new System.Drawing.Point(27, 90);
             this.pnlPlaying.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlPlaying.Name = "pnlPlaying";
-            this.pnlPlaying.Size = new System.Drawing.Size(1277, 409);
-            this.pnlPlaying.TabIndex = 3;
+            this.pnlPlaying.Size = new System.Drawing.Size(1277, 391);
+            this.pnlPlaying.TabIndex = 18;
             // 
             // label4
             // 
@@ -132,7 +132,6 @@
             this.txtAnswer.Name = "txtAnswer";
             this.txtAnswer.Size = new System.Drawing.Size(255, 39);
             this.txtAnswer.TabIndex = 7;
-            this.txtAnswer.TextChanged += new System.EventHandler(this.txtAnswer_TextChanged);
             // 
             // pictureBox1
             // 
@@ -165,15 +164,16 @@
             this.lblCountDown.Size = new System.Drawing.Size(66, 46);
             this.lblCountDown.TabIndex = 4;
             this.lblCountDown.Text = "30";
+            this.lblCountDown.Click += new System.EventHandler(this.lblCountDown_Click);
             // 
             // pnlStartGame
             // 
             this.pnlStartGame.Controls.Add(this.label5);
             this.pnlStartGame.Controls.Add(this.btnStartGame);
-            this.pnlStartGame.Location = new System.Drawing.Point(28, 82);
+            this.pnlStartGame.Location = new System.Drawing.Point(28, 90);
             this.pnlStartGame.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStartGame.Name = "pnlStartGame";
-            this.pnlStartGame.Size = new System.Drawing.Size(1276, 422);
+            this.pnlStartGame.Size = new System.Drawing.Size(1276, 389);
             this.pnlStartGame.TabIndex = 10;
             // 
             // label5
@@ -366,8 +366,8 @@
             this.ClientSize = new System.Drawing.Size(1339, 750);
             this.Controls.Add(this.pnlStartGame);
             this.Controls.Add(this.lblRoomCode);
-            this.Controls.Add(this.panel2);
             this.Controls.Add(this.pnlPlaying);
+            this.Controls.Add(this.panel2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.button1);
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);

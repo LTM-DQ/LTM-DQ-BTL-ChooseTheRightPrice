@@ -51,13 +51,13 @@ namespace Client3
                                                SocketFlags.None);
                     if (byteRcv > 0)
                     {
+                        // quy1
                         messageRcv[byteRcv] = 0;
                         string dataReceive = Encoding.UTF8.GetString(messageRcv);
                         Console.WriteLine(dataReceive);
                         string opcode = dataReceive.Substring(0, 3);
                         string payload = dataReceive.Substring(4);
                         handleMessage(opcode, payload);
-                    
                     }
                 }
 
@@ -73,6 +73,15 @@ namespace Client3
         {
             switch (opcode)
             {
+                //Sign up successfully
+                case "200":
+                    MessageBox.Show(payload);
+                    break;
+                //Sign up fail: Account already exists
+                case "400":
+                    MessageBox.Show(payload);
+                    break;
+                //Sign in successfully
                 case "210":
                     //open main form
                     Client3.LoginForm.instance.Invoke((MethodInvoker)delegate
@@ -84,14 +93,25 @@ namespace Client3
                         mainform1.Show();
                     });
                     break;
+                //Sign in fail
                 case "410":
                     //Username or password is incorrect
                     MessageBox.Show(payload);
                     break;
+                //Sign in fail
                 case "411":
                     //Logged in from a different locatione
                     MessageBox.Show(payload);
                     break;
+                //Logout
+                case "220":
+                    MainForm.instance.Invoke((MethodInvoker)delegate
+                    {
+                        MainForm.instance.Hide();
+                        LoginForm.instance.Show();
+                    });
+                    break;
+                //Create Room
                 case "230":
                     MainForm.instance.Invoke((MethodInvoker)delegate
                     {
@@ -256,6 +276,20 @@ namespace Client3
                     {
                         labelQuestion.Text = payload;
                         //countDownTimePlay.Enabled = true;
+                    });
+                    break;
+                case "291":
+                    Console.WriteLine(payload);
+                    labelQuestion = Client3.PlayForm.instance.labelQues;
+                    var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
+                    countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
+                    var numberTime = Client3.PlayForm.instance.i;
+                    labelQuestion.Invoke((MethodInvoker)delegate
+                    {
+                        labelQuestion.Text = "question";
+                        countDownTimePlay.Enabled = false;
+                        countDownTimeWait.Enabled = false;
+                        numberTime = 30;
                     });
                     break;
                 case "451":

@@ -91,5 +91,18 @@ namespace Client3
             playform.Closed += (s, args) => this.Close();
             playform.Show();
         }
+        /// <summary>
+        /// Logout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// 
+        /// <param name="e"></param>
+        private void label1_Click_1(object sender, EventArgs e)
+        {
+            //send request logout to server
+            string createRoomMessage = "LOGOUT" + Globals.DELIMITER;
+            byte[] msg = Encoding.UTF8.GetBytes(createRoomMessage);
+            Globals.SendMessage(client, msg);
+        }
     }
 }

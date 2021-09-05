@@ -110,6 +110,19 @@ namespace Client3
             }
         }
 
+        private void btnRegister_Click(object sender, EventArgs e)
+        {
+            string username = txtUsernameLogin.Text;
+            string password = txtPasswordLogin.Text;
+            if (username == "") MessageBox.Show("Please fill username !");
+            if (password == "") MessageBox.Show("Please fill password !");
+            if (username != "" && password != "")
+            {
+                string loginMessage = "SIGNUP " + username + "\n" + password + Globals.DELIMITER;
+                byte[] msg = Encoding.UTF8.GetBytes(loginMessage);
+                Globals.SendMessage(client, msg);
+            }
+        }
     }
 }
 
