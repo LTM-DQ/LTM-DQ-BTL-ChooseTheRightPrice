@@ -274,15 +274,37 @@ namespace Client3
                     var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
                     countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
                     var numberTime = Client3.PlayForm.instance.i;
+                    pnlStartGame = Client3.PlayForm.instance.panelStartGame;
+                    var labelAnswers291 = Client3.PlayForm.instance.labelAnswers;
+                    var tableScore291 = Client3.PlayForm.instance.tableScore;
                     labelQuestion.Invoke((MethodInvoker)delegate
                     {
                         labelQuestion.Text = payload;
                         countDownTimePlay.Enabled = false;
                         countDownTimeWait.Enabled = false;
-                        numberTime = 30;
+                        numberTime = 5;
+                    });
+                    pnlStartGame.Invoke((MethodInvoker)delegate
+                    {
+                        pnlStartGame.Visible = true;
+                    });
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        var labelAnswerI = labelAnswers291[i];
+                        labelAnswerI.Invoke((MethodInvoker)delegate
+                        {
+                            labelAnswerI.Text = "0";
+                        });
+                    }
+                    tableScore291.Invoke((MethodInvoker)delegate
+                    {
+                        tableScore291.Rows.Clear();
                     });
                     break;
                 case "451":
+                    MessageBox.Show(payload);
+                    break;
+                case "450":
                     MessageBox.Show(payload);
                     break;
                 default:

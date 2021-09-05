@@ -109,6 +109,7 @@ void updateLoginStatus(string username, string isLogin);
 void handleAnswer(LP_Session session, string &log, string data);
 void getResult(LP_Session session, string &log);
 void getQuizDB(LP_Question *quiz);
+bool isNumber(string& s);
 
 int main(int argc, char *argv[])
 {
@@ -547,12 +548,18 @@ void handleProtocol(LP_Session session, string &log) {
 */
 void handleAnswer(LP_Session session, string &log, string data) {
 	LP_Player player = session->player;
+	if (data != "") {
+		if (!isNumber(data)) {
+			data = "";
+		}
+	}
 	session->player->answer = data;
 	char buff[DATA_BUFSIZE];
 	memset(buff, 0, DATA_BUFSIZE);
 	string rs;
 	int bestAnswer = INT_MAX;
-	int playerAnswerCorrect, correctAnswer, roomIndex;
+	int distance[MAX_PLAYER_IN_ROOM] = { -1 };
+	int correctAnswer, roomIndex;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = session->player->roomLoc;
 	rooms[roomIndex]->numberAnswer++;
@@ -564,15 +571,20 @@ void handleAnswer(LP_Session session, string &log, string data) {
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->answer != "") {
-					int distance = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
-					if (distance < bestAnswer) {
-						bestAnswer = distance;
-						playerAnswerCorrect = i;
+					distance[i] = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
+					if (distance[i] < bestAnswer) {
+						bestAnswer = distance[i];
 					}
 				}
 			}
 		}
-		rooms[roomIndex]->players[playerAnswerCorrect]->score += 10;
+		// if no one answer, don't plus score
+		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+			if (distance[i] != -1) {
+				if (distance[i] == bestAnswer) 
+					rooms[roomIndex]->players[i]->score += 10;
+			}
+		}		
 		// create message response client
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
@@ -607,6 +619,7 @@ void startGame(LP_Session session, string &log) {
 	LP_Player player = session->player;
 	LP_Question *quizzes;
 	int roomIndex;
+	int numberPlayerInRoom;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = player->roomLoc;
 	bool checkMaster = rooms[roomIndex]->roomMaster->userID != player->userID;
@@ -618,6 +631,7 @@ void startGame(LP_Session session, string &log) {
 	rooms[roomIndex]->questionNumber = 0; 
 	rooms[roomIndex]->numberGetQuestion = 0;
 	quizzes = rooms[session->player->roomLoc]->quizzes;
+	numberPlayerInRoom = rooms[roomIndex]->numberOfPlayer;
 	LeaveCriticalSection(&criticalSection);
 	if (checkMaster) {
 		// if player is not room master
@@ -625,23 +639,30 @@ void startGame(LP_Session session, string &log) {
 		strcpy(session->buffer, "451 player is not room master");
 	}
 	else {
-		log += "250";
-		strcpy(session->buffer, "250 start game");
-		char buff[DATA_BUFSIZE];
-		strcpy(buff, "250 start game");
-		// get quizzes in DB and save in quizzes array
-		getQuizDB(quizzes);
-		EnterCriticalSection(&criticalSection);
-		rooms[roomIndex]->numberAnswer = 0;
-		// send message start game to all player
-		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-			if (rooms[roomIndex]->players[i]) {
-				if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
-					sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+		if (numberPlayerInRoom == 1) {
+			 //if not enough people in room
+			log += "450";
+			strcpy(session->buffer, "450 not enough people to start");
+		}
+		else {
+			log += "250";
+			strcpy(session->buffer, "250 start game");
+			char buff[DATA_BUFSIZE];
+			strcpy(buff, "250 start game");
+			// get quizzes in DB and save in quizzes array
+			getQuizDB(quizzes);
+			EnterCriticalSection(&criticalSection);
+			rooms[roomIndex]->numberAnswer = 0;
+			// send message start game to all player
+			for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
+				if (rooms[roomIndex]->players[i]) {
+					if (rooms[roomIndex]->players[i]->userID != rooms[roomIndex]->roomMaster->userID) {
+						sendMessage(buff, rooms[roomIndex]->players[i]->socket);
+					}
 				}
 			}
+			LeaveCriticalSection(&criticalSection);
 		}
-		LeaveCriticalSection(&criticalSection);
 	}
 	writeInLogFile(log);
 }
@@ -1187,6 +1208,13 @@ string gen_random(const int len) {
 		tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
 	return tmp_s;
 
+}
+
+bool isNumber(string& s)
+{
+	auto it = s.begin();
+	while (it != s.end() && isdigit(*it)) ++it;
+	return !s.empty() && it == s.end();
 }
 
 

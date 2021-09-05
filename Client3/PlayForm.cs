@@ -135,12 +135,13 @@ namespace Client3
             if (i == 0)
             {
                 timer2.Enabled = false;
-                i = 10;
+                i = 2;
                 lblCountDown.Text = i.ToString();
                 string message = "QUIZZZ " + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(message);
                 Globals.SendMessage(client, msg);
                 timer1.Enabled = true;
+                labelResult.Text = "0";
             }
         }
     }

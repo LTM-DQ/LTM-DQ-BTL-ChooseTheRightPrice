@@ -32,13 +32,14 @@
             this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.pnlPlaying = new System.Windows.Forms.Panel();
+            this.labelResult = new System.Windows.Forms.Label();
             this.dataGridView2 = new System.Windows.Forms.DataGridView();
             this.Username = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Score = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label4 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
             this.txtAnswer = new System.Windows.Forms.TextBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.lblQuestion = new System.Windows.Forms.Label();
             this.lblCountDown = new System.Windows.Forms.Label();
             this.pnlStartGame = new System.Windows.Forms.Panel();
@@ -60,11 +61,9 @@
             this.lblRoomCode = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
-            this.label2 = new System.Windows.Forms.Label();
-            this.labelResult = new System.Windows.Forms.Label();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.pnlPlaying.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.pnlStartGame.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picBoxUser4)).BeginInit();
@@ -103,7 +102,6 @@
             this.pnlPlaying.Controls.Add(this.button2);
             this.pnlPlaying.Controls.Add(this.label2);
             this.pnlPlaying.Controls.Add(this.txtAnswer);
-            this.pnlPlaying.Controls.Add(this.pictureBox1);
             this.pnlPlaying.Controls.Add(this.lblQuestion);
             this.pnlPlaying.Controls.Add(this.lblCountDown);
             this.pnlPlaying.Location = new System.Drawing.Point(22, 71);
@@ -111,6 +109,16 @@
             this.pnlPlaying.Name = "pnlPlaying";
             this.pnlPlaying.Size = new System.Drawing.Size(958, 332);
             this.pnlPlaying.TabIndex = 3;
+            // 
+            // labelResult
+            // 
+            this.labelResult.AutoSize = true;
+            this.labelResult.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelResult.Location = new System.Drawing.Point(108, 275);
+            this.labelResult.Name = "labelResult";
+            this.labelResult.Size = new System.Drawing.Size(20, 24);
+            this.labelResult.TabIndex = 102;
+            this.labelResult.Text = "0";
             // 
             // dataGridView2
             // 
@@ -152,7 +160,7 @@
             // button2
             // 
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button2.Location = new System.Drawing.Point(702, 216);
+            this.button2.Location = new System.Drawing.Point(410, 168);
             this.button2.Margin = new System.Windows.Forms.Padding(2);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(190, 54);
@@ -160,6 +168,16 @@
             this.button2.Text = "Submit";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(35, 275);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(67, 24);
+            this.label2.TabIndex = 101;
+            this.label2.Text = "Result:";
             // 
             // txtAnswer
             // 
@@ -169,18 +187,6 @@
             this.txtAnswer.Name = "txtAnswer";
             this.txtAnswer.Size = new System.Drawing.Size(192, 32);
             this.txtAnswer.TabIndex = 7;
-            // 
-            // pictureBox1
-            // 
-            this.pictureBox1.BackgroundImage = global::Client3.Properties.Resources.egg;
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox1.Location = new System.Drawing.Point(361, 86);
-            this.pictureBox1.Margin = new System.Windows.Forms.Padding(2);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(301, 227);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
-            this.pictureBox1.TabIndex = 6;
-            this.pictureBox1.TabStop = false;
             // 
             // lblQuestion
             // 
@@ -208,7 +214,7 @@
             // 
             this.pnlStartGame.Controls.Add(this.label5);
             this.pnlStartGame.Controls.Add(this.btnStartGame);
-            this.pnlStartGame.Location = new System.Drawing.Point(23, 71);
+            this.pnlStartGame.Location = new System.Drawing.Point(21, 67);
             this.pnlStartGame.Margin = new System.Windows.Forms.Padding(2);
             this.pnlStartGame.Name = "pnlStartGame";
             this.pnlStartGame.Size = new System.Drawing.Size(957, 343);
@@ -264,48 +270,50 @@
             // 
             this.labelAnswer3.AutoSize = true;
             this.labelAnswer3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelAnswer3.Location = new System.Drawing.Point(758, 9);
+            this.labelAnswer3.ForeColor = System.Drawing.Color.Red;
+            this.labelAnswer3.Location = new System.Drawing.Point(774, 10);
             this.labelAnswer3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelAnswer3.Name = "labelAnswer3";
-            this.labelAnswer3.Size = new System.Drawing.Size(51, 20);
+            this.labelAnswer3.Size = new System.Drawing.Size(18, 20);
             this.labelAnswer3.TabIndex = 11;
-            this.labelAnswer3.Text = "label7";
+            this.labelAnswer3.Text = "0";
             // 
             // labelAnswer2
             // 
             this.labelAnswer2.AutoSize = true;
             this.labelAnswer2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelAnswer2.Location = new System.Drawing.Point(562, 9);
+            this.labelAnswer2.ForeColor = System.Drawing.Color.Red;
+            this.labelAnswer2.Location = new System.Drawing.Point(578, 10);
             this.labelAnswer2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelAnswer2.Name = "labelAnswer2";
-            this.labelAnswer2.Size = new System.Drawing.Size(51, 20);
+            this.labelAnswer2.Size = new System.Drawing.Size(18, 20);
             this.labelAnswer2.TabIndex = 10;
-            this.labelAnswer2.Text = "label6";
+            this.labelAnswer2.Text = "0";
             // 
             // labelAnswer1
             // 
             this.labelAnswer1.AutoSize = true;
             this.labelAnswer1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelAnswer1.ForeColor = System.Drawing.Color.Red;
-            this.labelAnswer1.Location = new System.Drawing.Point(372, 10);
+            this.labelAnswer1.Location = new System.Drawing.Point(394, 10);
             this.labelAnswer1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelAnswer1.Name = "labelAnswer1";
-            this.labelAnswer1.Size = new System.Drawing.Size(51, 20);
+            this.labelAnswer1.Size = new System.Drawing.Size(18, 20);
             this.labelAnswer1.TabIndex = 9;
-            this.labelAnswer1.Text = "label3";
+            this.labelAnswer1.Text = "0";
             // 
             // labelAnswer0
             // 
             this.labelAnswer0.AutoSize = true;
-            this.labelAnswer0.BackColor = System.Drawing.Color.Black;
+            this.labelAnswer0.BackColor = System.Drawing.SystemColors.Control;
             this.labelAnswer0.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelAnswer0.ForeColor = System.Drawing.Color.Red;
-            this.labelAnswer0.Location = new System.Drawing.Point(168, 9);
+            this.labelAnswer0.Location = new System.Drawing.Point(190, 10);
             this.labelAnswer0.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelAnswer0.Name = "labelAnswer0";
-            this.labelAnswer0.Size = new System.Drawing.Size(45, 20);
+            this.labelAnswer0.Size = new System.Drawing.Size(18, 20);
             this.labelAnswer0.TabIndex = 8;
-            this.labelAnswer0.Text = "0000";
+            this.labelAnswer0.Text = "0";
             // 
             // lblUser4
             // 
@@ -407,26 +415,6 @@
             this.timer2.Interval = 1000;
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(35, 275);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(67, 24);
-            this.label2.TabIndex = 101;
-            this.label2.Text = "Result:";
-            // 
-            // labelResult
-            // 
-            this.labelResult.AutoSize = true;
-            this.labelResult.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelResult.Location = new System.Drawing.Point(108, 275);
-            this.labelResult.Name = "labelResult";
-            this.labelResult.Size = new System.Drawing.Size(20, 24);
-            this.labelResult.TabIndex = 102;
-            this.labelResult.Text = "0";
-            // 
             // PlayForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -445,7 +433,6 @@
             this.pnlPlaying.ResumeLayout(false);
             this.pnlPlaying.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.pnlStartGame.ResumeLayout(false);
             this.pnlStartGame.PerformLayout();
             this.panel2.ResumeLayout(false);
@@ -464,7 +451,6 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel pnlPlaying;
-        private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label labelQuestion;
         private System.Windows.Forms.Label lblCountDown;
         private System.Windows.Forms.Label label4;
@@ -495,5 +481,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Score;
         private System.Windows.Forms.Label labelResult;
         private System.Windows.Forms.Label label2;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
