@@ -344,6 +344,22 @@ namespace Client3
                 case "450":
                     MessageBox.Show(payload);
                     break;
+                //Room doesn't exist
+                case "440":
+                    MessageBox.Show(payload);
+                    break;
+                //Full players in room
+                case "441":
+                    MessageBox.Show(payload);
+                    break;
+                //Game is being played
+                case "442":
+                    MessageBox.Show(payload);
+                    break;
+                //Don't have available rooms
+                case "443":
+                    MessageBox.Show(payload);
+                    break;
                 default:
                     break;
             }
