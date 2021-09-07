@@ -770,7 +770,7 @@ void getQuizDB(LP_Question *quiz) {
 	SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
 }
 
-/* The exitRoom function create a room
+/* The createRoom function create a room
 * @param session - LP_Session struct pointer manage user
 * @param log - reference variable store the activity log
 * @return No return value
@@ -835,7 +835,7 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 					//Join room successfully
 					string playersInRoom = "";
 					for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
-						if (rooms[j]->players[i] == NULL) {
+						if (!rooms[j]->players[i]) {
 							rooms[j]->players[i] = player;
 							player->position = i;
 							break;
@@ -900,6 +900,7 @@ void gointoRoom(LP_Session session, string &log, string roomID) {
 					return;
 				}
 				//Game started before
+				cout << "started: " << rooms[i]->is_started << endl;
 				if (rooms[i]->is_started) {
 					strcpy(session->buffer, "442 Game is being played.");
 					log += "442";
@@ -1002,7 +1003,7 @@ void exitRoom(LP_Session session, string &log) {
 						}
 						char buff[DATA_BUFSIZE];
 						strcpy(buff, dataForOtherPlayers.c_str());
-						sendMessage(buff, room->players[i]->socket);
+						sendMessage(buff, player->socket);
 					}
 				}
 			}
@@ -1020,8 +1021,8 @@ void exitRoom(LP_Session session, string &log) {
 		player->roomID = "";
 		strcpy(session->buffer, "280 Leave room successfully.");
 		log += "280";
-		writeInLogFile(log);
 		LeaveCriticalSection(&criticalSection);
+		writeInLogFile(log);
 	}
 
 }

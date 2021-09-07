@@ -205,8 +205,12 @@ namespace Client3
 
                 //leave room
                 case "280":
+                    var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
+                    var countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
                     PlayForm.instance.Invoke((MethodInvoker)delegate
                     {
+                        countDownTimePlay.Enabled = false;
+                        countDownTimeWait.Enabled = false;
                         PlayForm.instance.Hide();
                         MainForm.instance.Show();
                     });
@@ -242,7 +246,7 @@ namespace Client3
                 //Start game
                 case "250":
                     var pnlStartGame = Client3.PlayForm.instance.panelStartGame;
-                    var countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
+                    countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
                     pnlStartGame.Invoke((MethodInvoker)delegate
                     {
                         pnlStartGame.Visible = false;
@@ -304,7 +308,7 @@ namespace Client3
                 case "291":
                     Console.WriteLine(payload);
                     labelQuestion = Client3.PlayForm.instance.labelQues;
-                    var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
+                    countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
                     countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
                     var numberTime = Client3.PlayForm.instance.i;
                     pnlStartGame = Client3.PlayForm.instance.panelStartGame;
