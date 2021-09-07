@@ -152,7 +152,7 @@ namespace Client3
             if (i == 0)
             {
                 timer2.Enabled = false;
-                i = 2;
+                i = 10;
                 lblCountDown.Text = i.ToString();
                 string message = "QUIZZZ " + Globals.DELIMITER;
                 byte[] msg = Encoding.UTF8.GetBytes(message);
