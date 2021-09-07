@@ -557,21 +557,22 @@ void handleAnswer(LP_Session session, string &log, string data) {
 	char buff[DATA_BUFSIZE];
 	memset(buff, 0, DATA_BUFSIZE);
 	string rs;
-	int bestAnswer = INT_MAX;
-	int distance[MAX_PLAYER_IN_ROOM] = { -1 };
-	int correctAnswer, roomIndex;
+	long long int bestAnswer = LLONG_MAX;
+	long long int distance[MAX_PLAYER_IN_ROOM] = { -1 };
+	long long int correctAnswer;
+	int roomIndex;
 	EnterCriticalSection(&criticalSection);
 	roomIndex = session->player->roomLoc;
 	rooms[roomIndex]->numberAnswer++;
 	if (rooms[roomIndex]->numberAnswer == rooms[roomIndex]->numberOfPlayer) {
 		// when all player answer, the system going to start handle answer
 		strcat(buff, "260 ");
-		correctAnswer = atoi(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber-1]->correct_answer);
+		correctAnswer = stoll(rooms[roomIndex]->quizzes[rooms[roomIndex]->questionNumber-1]->correct_answer);
 		// find the player has the best answer and plus 10 point
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
 				if (rooms[roomIndex]->players[i]->answer != "") {
-					distance[i] = stoi(rooms[roomIndex]->players[i]->answer) - correctAnswer;
+					distance[i] = stoll(rooms[roomIndex]->players[i]->answer) - correctAnswer;
 					if (distance[i] < bestAnswer) {
 						bestAnswer = distance[i];
 					}
@@ -1076,9 +1077,9 @@ void signIn(LP_Session session, string &log, string data) {
 				return;
 			}
 			//login successfully
-			strcat_s(rs, "210 Sign in success!");
+			string result = "210 " + strUsername;
 			log += "210";
-			strcpy(session->buffer, rs);
+			strcpy(session->buffer, result.c_str());
 			session->isLogin = true;
 			updateLoginStatus(strUsername, "1");
 			strcpy(session->username, strUsername.c_str());

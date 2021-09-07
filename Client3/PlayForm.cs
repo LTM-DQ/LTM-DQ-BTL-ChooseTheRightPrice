@@ -26,6 +26,7 @@ namespace Client3
         public Panel labelCountDown;
         public Button buttonStartGame;
         public DataGridView tableScore;
+        public Label labelUsername;
         Socket client;
         public int i;
 
@@ -64,6 +65,7 @@ namespace Client3
             i = 5;
             tableScore = dataGridView2;
             lblResult = labelResult;
+            labelUsername = lblUsername;
         }
         
         private void PlayForm_Load(object sender, EventArgs e)
@@ -126,6 +128,16 @@ namespace Client3
             string joinRoomMessage = "EXITRM" + Globals.DELIMITER;
             byte[] msg = Encoding.UTF8.GetBytes(joinRoomMessage);
             Globals.SendMessage(client, msg);
+        }
+
+        private void labelAnswer1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void labelResult_Click(object sender, EventArgs e)
+        {
+
         }
 
         private void lblCountDown_Click(object sender, EventArgs e)

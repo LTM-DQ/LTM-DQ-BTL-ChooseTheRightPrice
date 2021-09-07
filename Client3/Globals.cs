@@ -77,10 +77,12 @@ namespace Client3
                 case "200":
                     MessageBox.Show(payload);
                     break;
+
                 //Sign up fail: Account already exists
                 case "400":
                     MessageBox.Show(payload);
                     break;
+
                 //Sign in successfully
                 case "210":
                     //open main form
@@ -91,8 +93,10 @@ namespace Client3
                         var mainform1 = new Client3.MainForm();
                         mainform1.Closed += (s, args) => Client3.LoginForm.instance.Close();
                         mainform1.Show();
+                        mainform1.labelUsername.Text = payload;
                     });
                     break;
+
                 //Sign in fail
                 case "410":
                     //Username or password is incorrect
@@ -134,15 +138,16 @@ namespace Client3
                         {
                             labelUser1.Text = username;
                         });
+                        playform1.labelUsername.Text = username;
                         var pictureBoxUsers = playform1.pictureBoxUsers;
                         pictureBoxUsers[0].BackgroundImage = Resources.user;
                         pictureBoxUsers[0].BackgroundImageLayout = ImageLayout.Stretch;
 
                     });
                     break;
-               
+
+                //Go into room
                 case "240":
-                    //Go into room by Id
                     string[] payloadData1 = payload.Split('\n');
                     string roomId = payloadData1[0];
                     string[] usernames = payloadData1[1].Split('*');
@@ -156,7 +161,8 @@ namespace Client3
                        
                         playform1.Closed += (s, args) => MainForm.instance.Close();
                         playform1.Show();
-                        
+
+                        playform1.labelUsername.Text = MainForm.instance.labelUsername.Text;
                         var labelUsers1 = playform1.labelUsers;
                         var pictureBoxUsers1 = Client3.PlayForm.instance.pictureBoxUsers;
                         for (int i = 0; i < usernames.Length; i++)
@@ -178,8 +184,7 @@ namespace Client3
                     
                     break;
                     
-                    //Open play form
-
+                //notify another players in room know that new player join room
                 case "241":
                     //Listen new player go into room
                     string[] usernames2 = payload.Split('*');
@@ -196,9 +201,9 @@ namespace Client3
                         pictureBoxUsers2[i].BackgroundImage = Resources.user;
                         pictureBoxUsers2[i].BackgroundImageLayout = ImageLayout.Stretch;
                     }
-
-
                     break;
+
+                //leave room
                 case "280":
                     PlayForm.instance.Invoke((MethodInvoker)delegate
                     {
@@ -209,6 +214,7 @@ namespace Client3
                     Console.WriteLine(position);
                     break;
 
+                //notify another players in room know this player leave room
                 case "281":
                     string[] payloadData281 = payload.Split('\n');
                     int position281 = int.Parse(payloadData281[0]);
@@ -233,6 +239,7 @@ namespace Client3
                     }
                     break;
 
+                //Start game
                 case "250":
                     var pnlStartGame = Client3.PlayForm.instance.panelStartGame;
                     var countDownTimeWait = Client3.PlayForm.instance.countDownTimeWait;
@@ -243,6 +250,8 @@ namespace Client3
                     });
                    
                     break;
+
+                // get answer and score
                 case "260":
                     try
                     {
@@ -279,6 +288,8 @@ namespace Client3
                         Console.WriteLine("Cannot receive message.");
                     }
                     break;
+
+                //get quiz
                 case "290":
                     var labelQuestion = Client3.PlayForm.instance.labelQues;
                     //var countDownTimePlay = Client3.PlayForm.instance.countDownTimePlay;
@@ -288,6 +299,8 @@ namespace Client3
                         //countDownTimePlay.Enabled = true;
                     });
                     break;
+
+                //End game
                 case "291":
                     Console.WriteLine(payload);
                     labelQuestion = Client3.PlayForm.instance.labelQues;
@@ -321,9 +334,13 @@ namespace Client3
                         tableScore291.Rows.Clear();
                     });
                     break;
+
+                //player is not room master
                 case "451":
                     MessageBox.Show(payload);
                     break;
+
+                //not enough people to start
                 case "450":
                     MessageBox.Show(payload);
                     break;

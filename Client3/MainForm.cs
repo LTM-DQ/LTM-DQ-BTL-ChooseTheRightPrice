@@ -15,13 +15,13 @@ namespace Client3
     {
         public static MainForm instance;
         Socket client;
+        public Label labelUsername;
         public MainForm()
         {
             InitializeComponent();
             instance = this;
             client = LoginForm.instance.client;
-            Console.WriteLine("Main Form here");
-            Console.WriteLine(client);
+            labelUsername = lblUsername;
         }
 
         private void label1_Click(object sender, EventArgs e)
