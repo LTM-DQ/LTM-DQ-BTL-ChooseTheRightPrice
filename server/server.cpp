@@ -13,6 +13,7 @@
 #include "string"
 #include "fstream"
 #include "DBConnection.h"
+#include <math.h>
 
 using namespace std;
 
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
 		}*/
 		rooms[i]->roomMaster = 0;
 		rooms[i]->numberOfPlayer = 0;
+		rooms[i]->is_started = false;
 		for (int j = 0; j < MAX_PLAYER_IN_ROOM; ++j) {
 			/*if ((rooms[i]->players[j] = (LP_Player)GlobalAlloc(GPTR, sizeof(Player))) == NULL) {
 				printf("GlobalAlloc() failed with error %d\n", GetLastError());
@@ -558,7 +560,7 @@ void handleAnswer(LP_Session session, string &log, string data) {
 	memset(buff, 0, DATA_BUFSIZE);
 	string rs;
 	long long int bestAnswer = LLONG_MAX;
-	long long int distance[MAX_PLAYER_IN_ROOM] = { -1 };
+	long long int distance[MAX_PLAYER_IN_ROOM] = { -1, -1, -1, -1 };
 	long long int correctAnswer;
 	int roomIndex;
 	EnterCriticalSection(&criticalSection);
@@ -571,8 +573,9 @@ void handleAnswer(LP_Session session, string &log, string data) {
 		// find the player has the best answer and plus 10 point
 		for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 			if (rooms[roomIndex]->players[i]) {
-				if (rooms[roomIndex]->players[i]->answer != "") {
-					distance[i] = stoll(rooms[roomIndex]->players[i]->answer) - correctAnswer;
+				if (rooms[roomIndex]->players[i]->answer != "" && rooms[roomIndex]->players[i]->answer != "0") {
+					cout << "check" << endl;
+					distance[i] = abs(stoll(rooms[roomIndex]->players[i]->answer) - correctAnswer);
 					if (distance[i] < bestAnswer) {
 						bestAnswer = distance[i];
 					}
@@ -625,6 +628,7 @@ void startGame(LP_Session session, string &log) {
 	roomIndex = player->roomLoc;
 	bool checkMaster = rooms[roomIndex]->roomMaster->userID != player->userID;
 	rooms[roomIndex]->numberAnswer = 0;
+	rooms[roomIndex]->is_started = true;
 	for (int i = 0; i < MAX_PLAYER_IN_ROOM; ++i) {
 		if (rooms[roomIndex]->players[i])
 			rooms[roomIndex]->players[i]->score = 0;
@@ -684,6 +688,7 @@ void getQuiz(LP_Session session, string &log) {
 	if (rooms[roomIndex]->questionNumber == MAX_QUESTION) {
 		// end game
 		rs = "291 end game";
+		rooms[roomIndex]->is_started = false;
 	}
 	else {
 		// get quiz in quizzes array
