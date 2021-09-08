@@ -1003,7 +1003,7 @@ void exitRoom(LP_Session session, string &log) {
 						}
 						char buff[DATA_BUFSIZE];
 						strcpy(buff, dataForOtherPlayers.c_str());
-						sendMessage(buff, player->socket);
+						sendMessage(buff, room->players[i]->socket);
 					}
 				}
 			}
